@@ -2,6 +2,7 @@ import enum
 import io
 from .binary_io import BinaryReader
 
+
 class ByamlFile:
 
     class Header:
@@ -31,7 +32,7 @@ class ByamlFile:
             self.path_array_node = ByamlNode.from_file(self, reader)
             # Read the root node.
             reader.seek(header.root_node_offset)
-            self.root_node = ByamlNode.from_file(self, reader)
+            self.root = ByamlNode.from_file(self, reader)
 
 
 class ByamlNodeType(enum.IntEnum):
@@ -92,6 +93,15 @@ class ByamlStringNode(ByamlNode):
         self.name = byaml_file.name_array_node[reader.read_uint32()]
         return self
 
+    def __init__(self):
+        self.name = None
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.name
+
 
 class ByamlPathNode(ByamlNode):
 
@@ -100,6 +110,15 @@ class ByamlPathNode(ByamlNode):
         self = ByamlPathNode()
         self.path = byaml_file.path_array_node[reader.read_uint32()]
         return self
+
+    def __init__(self):
+        self.path = None
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.path)
 
 
 class ByamlArrayNode(ByamlNode):
@@ -125,6 +144,12 @@ class ByamlArrayNode(ByamlNode):
     def __iter__(self):
         return iter(self.elements)
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.elements)
+
 
 class ByamlDictionaryNode(ByamlNode):
 
@@ -135,8 +160,8 @@ class ByamlDictionaryNode(ByamlNode):
         self.elements = {}
         for i in range(0, length):
             value = reader.read_uint32()
-            node_type = value & 0x000000FF
             node_name_index = value >> 8 & 0xFFFFFFFF
+            node_type = value & 0x000000FF
             node_name = byaml_file.name_array_node[node_name_index]
             self.elements[node_name] = ByamlNode.from_file(byaml_file, reader, node_type)
         return self
@@ -149,6 +174,12 @@ class ByamlDictionaryNode(ByamlNode):
 
     def __iter__(self):
         return iter(self.elements)
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.elements)
 
 
 class ByamlStringArrayNode(ByamlNode):
@@ -176,6 +207,12 @@ class ByamlStringArrayNode(ByamlNode):
 
     def __iter__(self):
         return iter(self.elements)
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.elements)
 
 
 class ByamlPathArrayNode(ByamlNode):
@@ -205,6 +242,12 @@ class ByamlPathArrayNode(ByamlNode):
     def __iter__(self):
         return iter(self.elements)
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.elements)
+
 
 class ByamlBooleanNode(ByamlNode):
 
@@ -213,6 +256,15 @@ class ByamlBooleanNode(ByamlNode):
         self = ByamlBooleanNode()
         self.value = reader.read_uint32() != 0
         return self
+
+    def __init__(self):
+        self.value = None
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.value)
 
 
 class ByamlIntegerNode(ByamlNode):
@@ -223,6 +275,15 @@ class ByamlIntegerNode(ByamlNode):
         self.value = reader.read_int32()
         return self
 
+    def __init__(self):
+        self.value = None
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.value)
+
 
 class ByamlFloatNode(ByamlNode):
 
@@ -231,6 +292,15 @@ class ByamlFloatNode(ByamlNode):
         self = ByamlFloatNode()
         self.value = reader.read_single()
         return self
+
+    def __init__(self):
+        self.value = None
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.value)
 
 
 class ByamlPath:

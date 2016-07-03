@@ -27,6 +27,9 @@ if "bpy" in locals():
     if "importing" in locals():
         print("Reloading: " + str(importing))
         importlib.reload(importing)
+    if "editing" in locals():
+        print("Reloading: " + str(editing))
+        importlib.reload(editing)
     if "exporting" in locals():
         print("Reloading: " + str(exporting))
         importlib.reload(exporting)
@@ -36,16 +39,27 @@ from . import log
 from . import binary_io
 from . import byaml_file
 from . import importing
+from . import editing
 from . import exporting
 
 def register():
     bpy.utils.register_module(__name__)
+    # Importing
     bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func_import)
+    # Editing
+    bpy.types.Scene.mk8       = bpy.props.PointerProperty(type=editing.MK8PropsScene)
+    bpy.types.Scene.mk8course = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
+    # Exporting
     #bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func_export)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
+    # Importing
     bpy.types.INFO_MT_file_import.remove(importing.ImportOperator.menu_func_import)
+    # Editing
+    del bpy.types.Scene.mk8
+    del bpy.types.Scene.mk8course
+    # Exporting
     #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func_export)
 
 # Register classes of the add-on when Blender runs this script.
