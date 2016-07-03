@@ -64,10 +64,6 @@ class MK8PropsSceneCourse(bpy.types.PropertyGroup):
         max=7,
         default=3
     )
-    obj_prms_expanded = bpy.props.BoolProperty(
-        name="Expand Obj Parameters",
-        description="Expand the Obj Parameter section or collapse it."
-    )
     obj_prm_1 = bpy.props.IntProperty(
         name="Param 1"
     )
@@ -92,6 +88,14 @@ class MK8PropsSceneCourse(bpy.types.PropertyGroup):
     obj_prm_8 = bpy.props.IntProperty(
         name="Param 8"
     )
+    pattern_num = bpy.props.IntProperty(
+        name="Pattern Num."
+    )
+
+    obj_prms_expanded = bpy.props.BoolProperty(
+        name="Expand Obj Parameters",
+        description="Expand the Obj Parameter section or collapse it."
+    )
 
 class MK8PanelSceneCourse(bpy.types.Panel):
     bl_label = "Mario Kart 8 Course"
@@ -106,7 +110,6 @@ class MK8PanelSceneCourse(bpy.types.Panel):
 
     def draw(self, context):
         self.layout.prop(context.scene.mk8course, "lap_number")
-        self.layout.prop(context.scene.mk8course, "effect_sw")
         self.layout.prop(context.scene.mk8course, "head_light")
         row = self.layout.row()
         row.prop(context.scene.mk8course, "is_jugem_above")
@@ -114,6 +117,10 @@ class MK8PanelSceneCourse(bpy.types.Panel):
         row = self.layout.row()
         row.prop(context.scene.mk8course, "is_first_left")
         row.prop(context.scene.mk8course, "lap_jugem_pos")
+        row = self.layout.row()
+        row.prop(context.scene.mk8course, "effect_sw")
+        row.prop(context.scene.mk8course, "pattern_num")
+        # Obj Parameters
         box = self.layout.box()
         row = box.row()
         row.prop(context.scene.mk8course, "obj_prms_expanded",
@@ -135,3 +142,120 @@ class MK8PanelSceneCourse(bpy.types.Panel):
             row = box.row()
             row.prop(context.scene.mk8course, "obj_prm_7")
             row.prop(context.scene.mk8course, "obj_prm_8")
+
+
+# ==== Object ==========================================================================================================
+
+class MK8PropsObject(bpy.types.PropertyGroup):
+    class ObjectType(enum.IntEnum):
+        No           = 0
+        Area         = 10
+        Clip         = 20
+        ClipArea     = 30
+        EffectArea   = 40
+        EnemyPath    = 50
+        GCameraPath  = 60
+        GlidePath    = 70
+        GravityPath  = 80
+        IntroCamera  = 90
+        ItemPath     = 100
+        JugemPath    = 110
+        LapPath      = 120
+        Obj          = 130
+        Path         = 140
+        ReplayCamera = 150
+        SoundObj     = 160
+
+    object_type = bpy.props.EnumProperty(
+        name="Object Type",
+        description="Specifies what kind of course content this object represents.",
+        items=[("0",   "None", "Do not handle this object as course content."),
+               ("130", "Obj",  "Handle this object as a course object.")]
+    )
+
+class MK8PanelObject(bpy.types.Panel):
+    bl_label = "Mario Kart 8"
+    bl_idname = "OBJECT_PT_mk8"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    def draw(self, context):
+        self.layout.prop(context.object.mk8, "object_type")
+
+# ---- Object Obj ------------------------------------------------------------------------------------------------------
+
+class MK8PropsObjectObj(bpy.types.PropertyGroup):
+    multi_2p = bpy.props.BoolProperty(
+        name="Exclude 2P",
+        description="Removes this obj in 2 player offline games."
+    )
+    multi_4p = bpy.props.BoolProperty(
+        name="Exclude 4P",
+        description="Removes this obj in 4 player offline games."
+    )
+    obj_id = bpy.props.IntProperty(
+        name="Obj ID",
+        description="The ID determining the type of this object (as defined in objflow.byaml)."
+    )
+    obj_path = bpy.props.IntProperty(
+        name="Path",
+        description="The number of the path this obj follows."
+    )
+    obj_path_point = bpy.props.IntProperty(
+        name="Path Point"
+    )
+    # TODO: These are actually arrays named like Obj_EnemyPath1
+    #obj_enemy_path = bpy.props.IntProperty(
+    #    name="Enemy Path"
+    #)
+    #obj_item_path = bpy.props.IntProperty(
+    #    name="Item Path"
+    #)
+    speed = bpy.props.FloatProperty(
+        name="Path Speed",
+        description="The speed in which the obj follows its path."
+    )
+    top_view = bpy.props.BoolProperty(
+        name="Top View"
+    )
+    unit_id_num = bpy.props.IntProperty(
+        name="Unit ID"
+    )
+    wifi = bpy.props.BoolProperty(
+        name="Exclude WiFi",
+        description="Removes this obj in online games."
+    )
+    wifi_2p = bpy.props.BoolProperty(
+        name="Exclude WiFi 2P",
+        description="Removes this obj in 2 player online games."
+    )
+
+class MK8PanelObjectObj(bpy.types.Panel):
+    bl_label = "Mario Kart 8 Obj"
+    bl_idname = "OBJECT_PT_mk8obj"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.object.mk8.object_type == str(int(MK8PropsObject.ObjectType.Obj))
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(context.object.mk8obj, "obj_id")
+        row.prop(context.object.mk8obj, "unit_id_num")
+        self.layout.prop(context.object.mk8obj, "top_view")
+        row = self.layout.row()
+        row.prop(context.object.mk8obj, "multi_2p")
+        row.prop(context.object.mk8obj, "multi_4p")
+        row = self.layout.row()
+        row.prop(context.object.mk8obj, "wifi")
+        row.prop(context.object.mk8obj, "wifi_2p")
+        self.layout.prop(context.object.mk8obj, "speed")
+        row = self.layout.row()
+        row.prop(context.object.mk8obj, "obj_path")
+        row.prop(context.object.mk8obj, "obj_path_point")
+        #self.layout.prop(context.object.mk8obj, "obj_enemy_path")
+        #self.layout.prop(context.object.mk8obj, "obj_item_path")

@@ -1,5 +1,6 @@
 import enum
 import io
+import mathutils
 from .binary_io import BinaryReader
 
 
@@ -138,8 +139,17 @@ class ByamlArrayNode(ByamlNode):
     def __init__(self):
         self.elements = None
 
+    def __delitem__(self, key):
+        del self.elements[key]
+
     def __getitem__(self, item):
         return self.elements[item]
+
+    def __setitem__(self, key, value):
+        self.elements[key] = value
+
+    def __len__(self):
+        return len(self.elements)
 
     def __iter__(self):
         return iter(self.elements)
@@ -149,6 +159,13 @@ class ByamlArrayNode(ByamlNode):
 
     def __str__(self):
         return str(self.elements)
+
+    def get(self, key, default=None):
+        return self.elements.get(key, default)
+
+    def get_value(self, key, default=None):
+        element = self.elements.get(key)
+        return element.value if element else default
 
 
 class ByamlDictionaryNode(ByamlNode):
@@ -169,8 +186,17 @@ class ByamlDictionaryNode(ByamlNode):
     def __init__(self):
         self.elements = None
 
+    def __delitem__(self, key):
+        del self.elements[key]
+
     def __getitem__(self, item):
         return self.elements[item]
+
+    def __setitem__(self, key, value):
+        self.elements[key] = value
+
+    def __len__(self):
+        return len(self.elements)
 
     def __iter__(self):
         return iter(self.elements)
@@ -180,6 +206,16 @@ class ByamlDictionaryNode(ByamlNode):
 
     def __str__(self):
         return str(self.elements)
+
+    def get(self, key, default=None):
+        return self.elements.get(key, default)
+
+    def get_value(self, key, default=None):
+        element = self.elements.get(key)
+        return element.value if element else default
+
+    def to_vector(self):
+        return mathutils.Vector((self.elements["X"].value, -self.elements["Z"].value, self.elements["Y"].value))
 
 
 class ByamlStringArrayNode(ByamlNode):
@@ -202,8 +238,17 @@ class ByamlStringArrayNode(ByamlNode):
     def __init__(self):
         self.elements = None
 
+    def __delitem__(self, key):
+        del self.elements[key]
+
     def __getitem__(self, item):
         return self.elements[item]
+
+    def __setitem__(self, key, value):
+        self.elements[key] = value
+
+    def __len__(self):
+        return len(self.elements)
 
     def __iter__(self):
         return iter(self.elements)
@@ -213,6 +258,13 @@ class ByamlStringArrayNode(ByamlNode):
 
     def __str__(self):
         return str(self.elements)
+
+    def get(self, key, default=None):
+        return self.elements.get(key, default)
+
+    def get_value(self, key, default=None):
+        element = self.elements.get(key)
+        return element.value if element else default
 
 
 class ByamlPathArrayNode(ByamlNode):
@@ -236,8 +288,17 @@ class ByamlPathArrayNode(ByamlNode):
     def __init__(self):
         self.elements = None
 
+    def __delitem__(self, key):
+        del self.elements[key]
+
     def __getitem__(self, item):
         return self.elements[item]
+
+    def __setitem__(self, key, value):
+        self.elements[key] = value
+
+    def __len__(self):
+        return len(self.elements)
 
     def __iter__(self):
         return iter(self.elements)
@@ -247,6 +308,13 @@ class ByamlPathArrayNode(ByamlNode):
 
     def __str__(self):
         return str(self.elements)
+
+    def get(self, key, default=None):
+        return self.elements.get(key, default)
+
+    def get_value(self, key, default=None):
+        element = self.elements.get(key)
+        return element.value if element else default
 
 
 class ByamlBooleanNode(ByamlNode):

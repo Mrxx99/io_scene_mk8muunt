@@ -1,9 +1,9 @@
 import bpy
 import bpy_extras
 import os
-from .editing import MK8PropsScene
-from .byaml_file import ByamlFile
 from .log import Log
+from .byaml_file import ByamlFile
+from .editing import MK8PropsScene, MK8PropsObject
 
 class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_idname = "import_scene.mk8muunt"
@@ -65,10 +65,36 @@ class Importer:
         scn.mk8course.obj_prm_6 = byaml.root["OBJPrm6"].value
         scn.mk8course.obj_prm_7 = byaml.root["OBJPrm7"].value
         scn.mk8course.obj_prm_8 = byaml.root["OBJPrm8"].value
-        # Convert the Obj instances.
-        Log.write(1, "OBJ[]")
+        scn.mk8course.pattern_num = byaml.root["PatternNum"].value
+        # TODO: Convert the sub nodes.
+        self._convert_byaml_area(byaml)
         self._convert_byaml_obj(byaml)
 
+    def _convert_byaml_area(self, byaml):
+        Log.write(1, "AREA[]")
+        for area in byaml.root["Area"]:
+            Log.write(2, "AREA")
+            # TODO: Create a cube visualizing the area.
+
     def _convert_byaml_obj(self, byaml):
+        Log.write(1, "OBJ[]")
         for obj in byaml.root["Obj"]:
-            Log.write(2, str(obj["ObjId"]))
+            Log.write(2, "OBJ " + str(obj["ObjId"]))
+            # Create an object representing the Obj (load the real model later on).
+            obj_ob = bpy.data.objects.new(str(obj["ObjId"]), None)
+            obj_ob.mk8.obj_type = str(int(MK8PropsObject.ObjectType.Obj))
+            obj_ob.mk8obj.multi_2p = obj["Multi2P"].value
+            obj_ob.mk8obj.multi_4p = obj["Multi4P"].value
+            obj_ob.mk8obj.obj_id = obj["ObjId"].value
+            obj_ob.mk8obj.obj_path = obj.get_value("Obj_Path", 0)
+            obj_ob.mk8obj.obj_path_point = obj.get_value("Obj_PathPoint", 0)
+            obj_ob.mk8obj.speed = obj["Speed"].value
+            obj_ob.mk8obj.top_view = obj["TopView"].value
+            obj_ob.mk8obj.unit_id_num = obj["UnitIdNum"].value
+            obj_ob.mk8obj.wifi = obj["WiFi"].value
+            obj_ob.mk8obj.wifi_2p = obj["WiFi2P"].value
+            obj_ob.scale = obj["Scale"].to_vector()
+            obj_ob.rotation_euler = obj["Rotate"].to_vector()
+            obj_ob.location = obj["Translate"].to_vector()
+
+            bpy.context.scene.objects.link(obj_ob)

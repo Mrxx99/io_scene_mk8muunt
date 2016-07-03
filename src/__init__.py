@@ -49,6 +49,8 @@ def register():
     # Editing
     bpy.types.Scene.mk8       = bpy.props.PointerProperty(type=editing.MK8PropsScene)
     bpy.types.Scene.mk8course = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
+    bpy.types.Object.mk8      = bpy.props.PointerProperty(type=editing.MK8PropsObject)
+    bpy.types.Object.mk8obj   = bpy.props.PointerProperty(type=editing.MK8PropsObjectObj)
     # Exporting
     #bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func_export)
 
@@ -59,6 +61,8 @@ def unregister():
     # Editing
     del bpy.types.Scene.mk8
     del bpy.types.Scene.mk8course
+    del bpy.types.Object.mk8
+    del bpy.types.Object.mk8obj
     # Exporting
     #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func_export)
 
