@@ -15,38 +15,30 @@ bl_info = {
 # Reload the classes when reloading add-ons in Blender with F8.
 if "bpy" in locals():
     import importlib
-    if "log" in locals():
-        print("Reloading: " + str(log))
-        importlib.reload(log)
-    if "binary_io" in locals():
-        print("Reloading: " + str(binary_io))
-        importlib.reload(binary_io)
-    if "byaml_file" in locals():
-        print("Reloading: " + str(byaml_file))
-        importlib.reload(byaml_file)
-    if "importing" in locals():
-        print("Reloading: " + str(importing))
-        importlib.reload(importing)
-    if "editing" in locals():
-        print("Reloading: " + str(editing))
-        importlib.reload(editing)
-    if "exporting" in locals():
-        print("Reloading: " + str(exporting))
-        importlib.reload(exporting)
+    if "binary_io"  in locals(): importlib.reload(binary_io)
+    if "byaml_file" in locals(): importlib.reload(byaml_file)
+    if "addon"      in locals(): importlib.reload(addon)
+    if "objflow"    in locals(): importlib.reload(objflow)
+    if "importing"  in locals(): importlib.reload(importing)
+    if "editing"    in locals(): importlib.reload(editing)
+    if "exporting"  in locals(): importlib.reload(exporting)
 
 import bpy
-from . import log
 from . import binary_io
 from . import byaml_file
+from . import addon
 from . import importing
 from . import editing
 from . import exporting
+
+# ---- Registration ----------------------------------------------------------------------------------------------------
 
 def register():
     bpy.utils.register_module(__name__)
     # Importing
     bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func_import)
     # Editing
+    bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
     bpy.types.Scene.mk8       = bpy.props.PointerProperty(type=editing.MK8PropsScene)
     bpy.types.Scene.mk8course = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
     bpy.types.Object.mk8      = bpy.props.PointerProperty(type=editing.MK8PropsObject)
@@ -59,6 +51,7 @@ def unregister():
     # Importing
     bpy.types.INFO_MT_file_import.remove(importing.ImportOperator.menu_func_import)
     # Editing
+    del bpy.types.UILayout.mk8_colbox
     del bpy.types.Scene.mk8
     del bpy.types.Scene.mk8course
     del bpy.types.Object.mk8

@@ -30,8 +30,8 @@ class MK8PanelScene(bpy.types.Panel):
 
 class MK8PropsSceneCourse(bpy.types.PropertyGroup):
     class HeadLights(enum.IntEnum):
-        AlwaysOff = 0,
-        AlwaysOn  = 1,
+        AlwaysOff = 0
+        AlwaysOn  = 1
         ByLapPath = 2
 
     effect_sw = bpy.props.IntProperty(
@@ -93,8 +93,8 @@ class MK8PropsSceneCourse(bpy.types.PropertyGroup):
     )
 
     obj_prms_expanded = bpy.props.BoolProperty(
-        name="Expand Obj Parameters",
-        description="Expand the Obj Parameter section or collapse it."
+        name="Obj Params",
+        description="Expand the Obj Params section or collapse it."
     )
 
 class MK8PanelSceneCourse(bpy.types.Panel):
@@ -121,14 +121,7 @@ class MK8PanelSceneCourse(bpy.types.Panel):
         row.prop(context.scene.mk8course, "effect_sw")
         row.prop(context.scene.mk8course, "pattern_num")
         # Obj Parameters
-        box = self.layout.box()
-        row = box.row()
-        row.prop(context.scene.mk8course, "obj_prms_expanded",
-             icon="TRIA_DOWN" if context.scene.mk8course.obj_prms_expanded else "TRIA_RIGHT",
-             icon_only=True,
-             emboss=False
-        )
-        row.label("Obj Parameters")
+        box = self.layout.mk8_colbox(context.scene.mk8course, "obj_prms_expanded")
         if context.scene.mk8course.obj_prms_expanded:
             row = box.row()
             row.prop(context.scene.mk8course, "obj_prm_1")
@@ -230,6 +223,36 @@ class MK8PropsObjectObj(bpy.types.PropertyGroup):
         name="Exclude WiFi 2P",
         description="Removes this obj in 2 player online games."
     )
+    prm_1 = bpy.props.IntProperty(
+        name="Param 1"
+    )
+    prm_2 = bpy.props.IntProperty(
+        name="Param 2"
+    )
+    prm_3 = bpy.props.IntProperty(
+        name="Param 3"
+    )
+    prm_4 = bpy.props.IntProperty(
+        name="Param 4"
+    )
+    prm_5 = bpy.props.IntProperty(
+        name="Param 5"
+    )
+    prm_6 = bpy.props.IntProperty(
+        name="Param 6"
+    )
+    prm_7 = bpy.props.IntProperty(
+        name="Param 7"
+    )
+    prm_8 = bpy.props.IntProperty(
+        name="Param 8"
+    )
+
+    params_expanded = bpy.props.BoolProperty(
+        name="Params",
+        description="Expand the Params section or collapse it.",
+        default=True
+    )
 
 class MK8PanelObjectObj(bpy.types.Panel):
     bl_label = "Mario Kart 8 Obj"
@@ -259,3 +282,18 @@ class MK8PanelObjectObj(bpy.types.Panel):
         row.prop(context.object.mk8obj, "obj_path_point")
         #self.layout.prop(context.object.mk8obj, "obj_enemy_path")
         #self.layout.prop(context.object.mk8obj, "obj_item_path")
+        box = self.layout.mk8_colbox(context.object.mk8obj, "params_expanded")
+        if context.object.mk8obj.params_expanded:
+            row = box.row()
+            row.prop(context.object.mk8obj, "prm_1")
+            row.prop(context.object.mk8obj, "prm_2")
+            row = box.row()
+            row.prop(context.object.mk8obj, "prm_3")
+            row.prop(context.object.mk8obj, "prm_4")
+            row = box.row()
+            row.prop(context.object.mk8obj, "prm_5")
+            row.prop(context.object.mk8obj, "prm_6")
+            row = box.row()
+            row.prop(context.object.mk8obj, "prm_7")
+            row.prop(context.object.mk8obj, "prm_8")
+

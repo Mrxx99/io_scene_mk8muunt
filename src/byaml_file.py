@@ -3,9 +3,7 @@ import io
 import mathutils
 from .binary_io import BinaryReader
 
-
 class ByamlFile:
-
     class Header:
         def __init__(self, reader):
             if reader.read_raw_string(2) != "BY":
@@ -36,7 +34,6 @@ class ByamlFile:
             reader.seek(header.root_node_offset)
             self.root = ByamlNode.from_file(self, reader)
 
-
 class ByamlNodeType(enum.IntEnum):
     StringIndex = 0xA0,  # 160
     PathIndex   = 0xA1,  # 161
@@ -47,7 +44,6 @@ class ByamlNodeType(enum.IntEnum):
     Boolean     = 0xD0,  # 208
     Integer     = 0xD1,  # 209
     Float       = 0xD2   # 210
-
 
 class ByamlNode:
 
@@ -86,57 +82,9 @@ class ByamlNode:
             elif node_type == ByamlNodeType.Float:       return ByamlFloatNode.from_file(byaml_file, reader)
             else: raise AssertionError("Unknown node type " + str(node_type) + ".")
 
+# ---- Element Nodes ---------------------------------------------------------------------------------------------------
 
-class ByamlStringNode(ByamlNode):
-
-    @staticmethod
-    def from_file(byaml_file, reader):
-        self = ByamlStringNode()
-        self.name = byaml_file.name_array_node[reader.read_uint32()]
-        return self
-
-    def __init__(self):
-        self.name = None
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return self.name
-
-
-class ByamlPathNode(ByamlNode):
-
-    @staticmethod
-    def from_file(byaml_file, reader):
-        self = ByamlPathNode()
-        self.path = byaml_file.path_array_node[reader.read_uint32()]
-        return self
-
-    def __init__(self):
-        self.path = None
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.path)
-
-
-class ByamlArrayNode(ByamlNode):
-
-    @staticmethod
-    def from_file(byaml_file, reader, length):
-        self = ByamlArrayNode()
-        # Read the element types of the array.
-        node_types = reader.read_bytes(length)
-        # Read the elements, which begin after a padding to the next 4 bytes.
-        reader.seek(-reader.tell() % 4, io.SEEK_CUR)
-        self.elements = []
-        for i in range(0, length):
-            self.elements.append(ByamlNode.from_file(byaml_file, reader, node_types[i]))
-        return self
-
+class ByamlElementNode(ByamlNode):
     def __init__(self):
         self.elements = None
 
@@ -168,9 +116,20 @@ class ByamlArrayNode(ByamlNode):
         element = self.elements.get(key)
         return element.value if element else default
 
+class ByamlArrayNode(ByamlElementNode):
+    @staticmethod
+    def from_file(byaml_file, reader, length):
+        self = ByamlArrayNode()
+        # Read the element types of the array.
+        node_types = reader.read_bytes(length)
+        # Read the elements, which begin after a padding to the next 4 bytes.
+        reader.seek(-reader.tell() % 4, io.SEEK_CUR)
+        self.elements = []
+        for i in range(0, length):
+            self.elements.append(ByamlNode.from_file(byaml_file, reader, node_types[i]))
+        return self
 
-class ByamlDictionaryNode(ByamlNode):
-
+class ByamlDictionaryNode(ByamlElementNode):
     @staticmethod
     def from_file(byaml_file, reader, length):
         self = ByamlDictionaryNode()
@@ -184,43 +143,10 @@ class ByamlDictionaryNode(ByamlNode):
             self.elements[node_name] = ByamlNode.from_file(byaml_file, reader, node_type)
         return self
 
-    def __init__(self):
-        self.elements = None
-
-    def __delitem__(self, key):
-        del self.elements[key]
-
-    def __getitem__(self, item):
-        return self.elements[item]
-
-    def __setitem__(self, key, value):
-        self.elements[key] = value
-
-    def __len__(self):
-        return len(self.elements)
-
-    def __iter__(self):
-        return iter(self.elements)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.elements)
-
-    def get(self, key, default=None):
-        return self.elements.get(key, default)
-
-    def get_value(self, key, default=None):
-        element = self.elements.get(key)
-        return element.value if element else default
-
     def to_vector(self):
         return mathutils.Vector((self.elements["X"].value, -self.elements["Z"].value, self.elements["Y"].value))
 
-
-class ByamlStringArrayNode(ByamlNode):
-
+class ByamlStringArrayNode(ByamlElementNode):
     @staticmethod
     def from_file(byaml_file, reader, length):
         self = ByamlStringArrayNode()
@@ -236,40 +162,7 @@ class ByamlStringArrayNode(ByamlNode):
         reader.seek(old_position)
         return self
 
-    def __init__(self):
-        self.elements = None
-
-    def __delitem__(self, key):
-        del self.elements[key]
-
-    def __getitem__(self, item):
-        return self.elements[item]
-
-    def __setitem__(self, key, value):
-        self.elements[key] = value
-
-    def __len__(self):
-        return len(self.elements)
-
-    def __iter__(self):
-        return iter(self.elements)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.elements)
-
-    def get(self, key, default=None):
-        return self.elements.get(key, default)
-
-    def get_value(self, key, default=None):
-        element = self.elements.get(key)
-        return element.value if element else default
-
-
-class ByamlPathArrayNode(ByamlNode):
-
+class ByamlPathArrayNode(ByamlElementNode):
     @staticmethod
     def from_file(byaml_file, reader, length):
         self = ByamlStringArrayNode()
@@ -286,94 +179,71 @@ class ByamlPathArrayNode(ByamlNode):
         reader.seek(old_position)
         return self
 
+# ---- Index Nodes -----------------------------------------------------------------------------------------------------
+
+class ByamlIndexNode(ByamlNode):
     def __init__(self):
-        self.elements = None
-
-    def __delitem__(self, key):
-        del self.elements[key]
-
-    def __getitem__(self, item):
-        return self.elements[item]
-
-    def __setitem__(self, key, value):
-        self.elements[key] = value
-
-    def __len__(self):
-        return len(self.elements)
-
-    def __iter__(self):
-        return iter(self.elements)
+        self.index = None
+        self.value = None
 
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        return str(self.elements)
+        return self.value
 
-    def get(self, key, default=None):
-        return self.elements.get(key, default)
+class ByamlStringNode(ByamlIndexNode):
+    @staticmethod
+    def from_file(byaml_file, reader):
+        self = ByamlStringNode()
+        self.index = reader.read_uint32()
+        self.value = byaml_file.string_array_node[self.index]
+        return self
 
-    def get_value(self, key, default=None):
-        element = self.elements.get(key)
-        return element.value if element else default
+class ByamlPathNode(ByamlIndexNode):
+    @staticmethod
+    def from_file(byaml_file, reader):
+        self = ByamlPathNode()
+        self.index = reader.read_uint32()
+        self.value = byaml_file.path_array_node[self.index]
+        return self
 
+# ---- Value Nodes -----------------------------------------------------------------------------------------------------
 
-class ByamlBooleanNode(ByamlNode):
+class ByamlValueNode(ByamlNode):
+    def __init__(self):
+        self.value = None
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.value)
+
+class ByamlBooleanNode(ByamlValueNode):
     @staticmethod
     def from_file(byaml_file, reader):
         self = ByamlBooleanNode()
         self.value = reader.read_uint32() != 0
         return self
 
-    def __init__(self):
-        self.value = None
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.value)
-
-
-class ByamlIntegerNode(ByamlNode):
-
+class ByamlIntegerNode(ByamlValueNode):
     @staticmethod
     def from_file(byaml_file, reader):
         self = ByamlIntegerNode()
         self.value = reader.read_int32()
         return self
 
-    def __init__(self):
-        self.value = None
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.value)
-
-
-class ByamlFloatNode(ByamlNode):
-
+class ByamlFloatNode(ByamlValueNode):
     @staticmethod
     def from_file(byaml_file, reader):
         self = ByamlFloatNode()
         self.value = reader.read_single()
         return self
 
-    def __init__(self):
-        self.value = None
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.value)
-
+# ---- Path ------------------------------------------------------------------------------------------------------------
 
 class ByamlPath:
-
     @staticmethod
     def from_file(reader, point_count):
         self = ByamlPath()
@@ -385,15 +255,28 @@ class ByamlPath:
     def __init__(self):
         self.points = None
 
+    def __delitem__(self, key):
+        del self.points[key]
+
     def __getitem__(self, item):
         return self.points[item]
+
+    def __setitem__(self, key, value):
+        self.points[key] = value
+
+    def __len__(self):
+        return len(self.points)
 
     def __iter__(self):
         return iter(self.points)
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.points)
 
 class ByamlPathPoint:
-
     @staticmethod
     def from_file(reader):
         self = ByamlPathPoint()
