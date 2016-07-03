@@ -28,9 +28,10 @@ class ByamlFile:
             # Read the string array node, holding strings referenced by index in string nodes.
             reader.seek(header.string_array_node_offset)
             self.string_array_node = ByamlNode.from_file(self, reader)
-            # Read the path array node, holding paths referenced by index in path nodes.
-            reader.seek(header.path_array_node_offset)
-            self.path_array_node = ByamlNode.from_file(self, reader)
+            # Read the optional path array node, holding paths referenced by index in path nodes.
+            if header.path_array_node_offset:
+                reader.seek(header.path_array_node_offset)
+                self.path_array_node = ByamlNode.from_file(self, reader)
             # Read the root node.
             reader.seek(header.root_node_offset)
             self.root = ByamlNode.from_file(self, reader)
