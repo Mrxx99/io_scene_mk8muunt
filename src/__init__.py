@@ -16,7 +16,7 @@ bl_info = {
 if "bpy" in locals():
     import importlib
     if "binary_io"  in locals(): importlib.reload(binary_io)
-    if "byaml_file" in locals(): importlib.reload(byaml_file)
+    if "byaml"      in locals(): importlib.reload(byaml)
     if "addon"      in locals(): importlib.reload(addon)
     if "objflow"    in locals(): importlib.reload(objflow)
     if "importing"  in locals(): importlib.reload(importing)
@@ -25,8 +25,9 @@ if "bpy" in locals():
 
 import bpy
 from . import binary_io
-from . import byaml_file
+from . import byaml
 from . import addon
+from . import objflow
 from . import importing
 from . import editing
 from . import exporting
@@ -36,28 +37,30 @@ from . import exporting
 def register():
     bpy.utils.register_module(__name__)
     # Importing
-    bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func_import)
+    bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func)
     # Editing
     bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
     bpy.types.Scene.mk8       = bpy.props.PointerProperty(type=editing.MK8PropsScene)
     bpy.types.Scene.mk8course = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
     bpy.types.Object.mk8      = bpy.props.PointerProperty(type=editing.MK8PropsObject)
+    bpy.types.Object.mk8area  = bpy.props.PointerProperty(type=editing.MK8PropsObjectArea)
     bpy.types.Object.mk8obj   = bpy.props.PointerProperty(type=editing.MK8PropsObjectObj)
     # Exporting
-    #bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func_export)
+    #bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
     # Importing
-    bpy.types.INFO_MT_file_import.remove(importing.ImportOperator.menu_func_import)
+    bpy.types.INFO_MT_file_import.remove(importing.ImportOperator.menu_func)
     # Editing
     del bpy.types.UILayout.mk8_colbox
     del bpy.types.Scene.mk8
     del bpy.types.Scene.mk8course
     del bpy.types.Object.mk8
+    del bpy.types.Object.mk8area
     del bpy.types.Object.mk8obj
     # Exporting
-    #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func_export)
+    #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func)
 
 # Register classes of the add-on when Blender runs this script.
 if __name__ == "__main__":

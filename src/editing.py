@@ -1,6 +1,6 @@
-import bmesh
 import bpy
 import enum
+from . import objflow
 
 # ==== Scene ===========================================================================================================
 
@@ -163,6 +163,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         name="Object Type",
         description="Specifies what kind of course content this object represents.",
         items=[("0",   "None", "Do not handle this object as course content."),
+               ("10",  "Area", "Handle this object as an area object."),
                ("130", "Obj",  "Handle this object as a course object.")]
     )
 
@@ -176,9 +177,104 @@ class MK8PanelObject(bpy.types.Panel):
     def draw(self, context):
         self.layout.prop(context.object.mk8, "object_type")
 
+# ---- Object Area -----------------------------------------------------------------------------------------------------
+
+class MK8PropsObjectAreaCameraArea(bpy.types.PropertyGroup):
+    value = bpy.props.IntProperty(
+        name="Camera Area",
+        min=0
+    )
+
+class MK8PropsObjectArea(bpy.types.PropertyGroup):
+    class AreaShape(enum.IntEnum):
+        Cube = 0,
+        Sphere = 1 # TODO: This might not be a sphere.
+
+    class AreaType(enum.IntEnum):
+        No = 0
+        Unknown1 = 1
+        Unknown2 = 2
+        Pull = 3
+        Unknown4 = 4
+        Unknown5 = 5
+
+    unit_id_num = bpy.props.IntProperty(
+        name="Unit ID",
+        min=0
+    )
+    area_shape = bpy.props.EnumProperty(
+        name="Shape",
+        description="Specifies the outer form of the region this area spans.",
+        items=[("0", "Cube", "The area spans a cuboid region."),
+               ("1", "Sphere (?)", "The area spans a spherical region (unsure: appears only twice in Big Blue).")]
+    )
+    area_type = bpy.props.EnumProperty(
+        name="Type",
+        description="Specifies the action taken for objects inside of this region.",
+        items=[("0", "None", "No special action will be taken."),
+               ("1", "Unknown (1)", "Unknown area type. Appears in Mario Circuit and Twisted Mansion."),
+               ("2", "Unknown (2)", "Unknown area type. Appears almost everywhere."),
+               ("3", "Pull", "Objects are moved along the specified path."),
+               ("4", "Unknown (4)", "Unknown area type. Appears in Mario Kart Stadium, Royal Raceway and Animal Crossing."),
+               ("5", "Unknown (5)", "Unknown area type. Appears almost everywhere.")]
+    )
+    area_path = bpy.props.IntProperty(
+        name="Path",
+        min=0
+    )
+    area_pull_path = bpy.props.IntProperty(
+        name="Pull Path",
+        min=0
+    )
+    prm1 = bpy.props.FloatProperty(
+        name="Param 1"
+    )
+    prm2 = bpy.props.FloatProperty(
+        name="Param 2"
+    )
+    camera_areas = bpy.props.CollectionProperty(
+        type=MK8PropsObjectAreaCameraArea
+    )
+
+    active_camera_area = bpy.props.IntProperty(
+    )
+
+class MK8PanelObjectArea(bpy.types.Panel):
+    bl_label = "Mario Kart 8 Area"
+    bl_idname = "OBJECT_PT_mk8area"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.object.mk8.object_type == str(int(MK8PropsObject.ObjectType.Area))
+
+    def draw(self, context):
+        obj = context.object.mk8area
+        self.layout.prop(obj, "unit_id_num")
+        self.layout.prop(obj, "area_shape")
+        # Area Type
+        self.layout.prop(obj, "area_type")
+        if obj.area_type == str(int(MK8PropsObjectArea.AreaType.Unknown2)):
+            self.layout.prop(obj, "area_path")
+        elif obj.area_type == str(int(MK8PropsObjectArea.AreaType.Pull)):
+            self.layout.prop(obj, "area_pull_path")
+        # Params
+        row = self.layout.row(align=True)
+        row.prop(obj, "prm1")
+        row.prop(obj, "prm2")
+        # Camera Areas
+        self.layout.template_list("UI_UL_list", "mk8_camera_areas", obj, "camera_areas", obj, "active_camera_area")
+
+
 # ---- Object Obj ------------------------------------------------------------------------------------------------------
 
 class MK8PropsObjectObj(bpy.types.PropertyGroup):
+    unit_id_num = bpy.props.IntProperty(
+        name="Unit ID",
+        min=0
+    )
     multi_2p = bpy.props.BoolProperty(
         name="Exclude 2P",
         description="Removes this obj in 2 player offline games."
@@ -189,31 +285,45 @@ class MK8PropsObjectObj(bpy.types.PropertyGroup):
     )
     obj_id = bpy.props.IntProperty(
         name="Obj ID",
-        description="The ID determining the type of this object (as defined in objflow.byaml)."
+        description="The ID determining the type of this object (as defined in objflow.byaml).",
+        min=1000,
+        max=9999
     )
     obj_path = bpy.props.IntProperty(
         name="Path",
-        description="The number of the path this obj follows."
+        description="The number of the path this obj follows.",
+        min=0
+    )
+    obj_obj_path = bpy.props.IntProperty(
+        name="Obj Path",
+        min=0
     )
     obj_path_point = bpy.props.IntProperty(
-        name="Path Point"
+        name="Path Point",
+        min=0
     )
-    # TODO: These are actually arrays named like Obj_EnemyPath1
-    #obj_enemy_path = bpy.props.IntProperty(
-    #    name="Enemy Path"
-    #)
-    #obj_item_path = bpy.props.IntProperty(
-    #    name="Item Path"
-    #)
+    obj_enemy_path_1 = bpy.props.IntProperty(
+        name="Enemy Path 1",
+        min=0
+    )
+    obj_enemy_path_2 = bpy.props.IntProperty(
+        name="Enemy Path 2",
+        min=0
+    )
+    obj_item_path_1 = bpy.props.IntProperty(
+        name="Item Path 1",
+        min=0
+    )
+    obj_item_path_2 = bpy.props.IntProperty(
+        name="Item Path 2",
+        min=0
+    )
     speed = bpy.props.FloatProperty(
         name="Path Speed",
         description="The speed in which the obj follows its path."
     )
     top_view = bpy.props.BoolProperty(
         name="Top View"
-    )
-    unit_id_num = bpy.props.IntProperty(
-        name="Unit ID"
     )
     wifi = bpy.props.BoolProperty(
         name="Exclude WiFi",
@@ -266,34 +376,46 @@ class MK8PanelObjectObj(bpy.types.Panel):
         return context.object.mk8.object_type == str(int(MK8PropsObject.ObjectType.Obj))
 
     def draw(self, context):
-        row = self.layout.row()
-        row.prop(context.object.mk8obj, "obj_id")
-        row.prop(context.object.mk8obj, "unit_id_num")
-        self.layout.prop(context.object.mk8obj, "top_view")
-        row = self.layout.row()
-        row.prop(context.object.mk8obj, "multi_2p")
-        row.prop(context.object.mk8obj, "multi_4p")
-        row = self.layout.row()
-        row.prop(context.object.mk8obj, "wifi")
-        row.prop(context.object.mk8obj, "wifi_2p")
-        self.layout.prop(context.object.mk8obj, "speed")
-        row = self.layout.row()
-        row.prop(context.object.mk8obj, "obj_path")
-        row.prop(context.object.mk8obj, "obj_path_point")
-        #self.layout.prop(context.object.mk8obj, "obj_enemy_path")
-        #self.layout.prop(context.object.mk8obj, "obj_item_path")
-        box = self.layout.mk8_colbox(context.object.mk8obj, "params_expanded")
-        if context.object.mk8obj.params_expanded:
+        obj = context.object.mk8obj
+        self.layout.prop(obj, "unit_id_num")
+        row = self.layout.row(align=True)
+        row.prop(obj, "obj_id")
+        obj_name = objflow.get_obj_label(context, obj.obj_id)
+        if obj_name:
+            row.label(obj_name)
+        else:
+            row.label("Unknown", icon="ERROR")
+        self.layout.prop(obj, "top_view")
+        row = self.layout.row(align=True)
+        row.prop(obj, "multi_2p")
+        row.prop(obj, "multi_4p")
+        row = self.layout.row(align=True)
+        row.prop(obj, "wifi")
+        row.prop(obj, "wifi_2p")
+        row = self.layout.row(align=True)
+        row.prop(obj, "speed")
+        row.prop(obj, "obj_path_point")
+        row = self.layout.row(align=True)
+        row.prop(obj, "obj_path")
+        row.prop(obj, "obj_obj_path")
+        row = self.layout.row(align=True)
+        row.prop(obj, "obj_enemy_path_1")
+        row.prop(obj, "obj_enemy_path_2")
+        row = self.layout.row(align=True)
+        row.prop(obj, "obj_item_path_1")
+        row.prop(obj, "obj_item_path_2")
+        box = self.layout.mk8_colbox(obj, "params_expanded")
+        if obj.params_expanded:
             row = box.row()
-            row.prop(context.object.mk8obj, "prm_1")
-            row.prop(context.object.mk8obj, "prm_2")
+            row.prop(obj, "prm_1")
+            row.prop(obj, "prm_2")
             row = box.row()
-            row.prop(context.object.mk8obj, "prm_3")
-            row.prop(context.object.mk8obj, "prm_4")
+            row.prop(obj, "prm_3")
+            row.prop(obj, "prm_4")
             row = box.row()
-            row.prop(context.object.mk8obj, "prm_5")
-            row.prop(context.object.mk8obj, "prm_6")
+            row.prop(obj, "prm_5")
+            row.prop(obj, "prm_6")
             row = box.row()
-            row.prop(context.object.mk8obj, "prm_7")
-            row.prop(context.object.mk8obj, "prm_8")
+            row.prop(obj, "prm_7")
+            row.prop(obj, "prm_8")
 

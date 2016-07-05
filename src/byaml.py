@@ -1,7 +1,7 @@
 import enum
 import io
 import mathutils
-from .binary_io import BinaryReader
+from . import binary_io
 
 class ByamlFile:
     class Header:
@@ -17,7 +17,7 @@ class ByamlFile:
 
     def __init__(self, raw):
         # Open a big-endian binary reader on the stream.
-        with BinaryReader(raw) as reader:
+        with binary_io.BinaryReader(raw) as reader:
             reader.endianness = ">"
             header = self.Header(reader)
             # Read the name array node, holding string referenced by index for the name of other nodes.
@@ -46,7 +46,6 @@ class ByamlNodeType(enum.IntEnum):
     Float       = 0xD2   # 210
 
 class ByamlNode:
-
     @staticmethod
     def from_file(byaml_file, reader, node_type=None):
         # Read the node type if it has not been provided yet.
@@ -86,34 +85,34 @@ class ByamlNode:
 
 class ByamlElementNode(ByamlNode):
     def __init__(self):
-        self.elements = None
+        self.value = None
 
     def __delitem__(self, key):
-        del self.elements[key]
+        del self.value[key]
 
     def __getitem__(self, item):
-        return self.elements[item]
+        return self.value[item]
 
     def __setitem__(self, key, value):
-        self.elements[key] = value
+        self.value[key] = value
 
     def __len__(self):
-        return len(self.elements)
+        return len(self.value)
 
     def __iter__(self):
-        return iter(self.elements)
+        return iter(self.value)
 
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        return str(self.elements)
+        return str(self.value)
 
     def get(self, key, default=None):
-        return self.elements.get(key, default)
+        return self.value.get(key, default)
 
     def get_value(self, key, default=None):
-        element = self.elements.get(key)
+        element = self.value.get(key)
         return element.value if element else default
 
 class ByamlArrayNode(ByamlElementNode):
@@ -124,9 +123,9 @@ class ByamlArrayNode(ByamlElementNode):
         node_types = reader.read_bytes(length)
         # Read the elements, which begin after a padding to the next 4 bytes.
         reader.seek(-reader.tell() % 4, io.SEEK_CUR)
-        self.elements = []
+        self.value = []
         for i in range(0, length):
-            self.elements.append(ByamlNode.from_file(byaml_file, reader, node_types[i]))
+            self.value.append(ByamlNode.from_file(byaml_file, reader, node_types[i]))
         return self
 
 class ByamlDictionaryNode(ByamlElementNode):
@@ -134,17 +133,17 @@ class ByamlDictionaryNode(ByamlElementNode):
     def from_file(byaml_file, reader, length):
         self = ByamlDictionaryNode()
         # Read the elements of the dictionary.
-        self.elements = {}
+        self.value = {}
         for i in range(0, length):
             value = reader.read_uint32()
             node_name_index = value >> 8 & 0xFFFFFFFF
             node_type = value & 0x000000FF
             node_name = byaml_file.name_array_node[node_name_index]
-            self.elements[node_name] = ByamlNode.from_file(byaml_file, reader, node_type)
+            self.value[node_name] = ByamlNode.from_file(byaml_file, reader, node_type)
         return self
 
     def to_vector(self):
-        return mathutils.Vector((self.elements["X"].value, -self.elements["Z"].value, self.elements["Y"].value))
+        return mathutils.Vector((self.value["X"].value, -self.value["Z"].value, self.value["Y"].value))
 
 class ByamlStringArrayNode(ByamlElementNode):
     @staticmethod
@@ -154,11 +153,11 @@ class ByamlStringArrayNode(ByamlElementNode):
         # Read the element offsets.
         offsets = reader.read_uint32s(length)
         # Read the strings by seeking to their element offset and then back.
-        self.elements = []
+        self.value = []
         old_position = reader.tell()
         for i in range(0, length):
             reader.seek(node_offset + offsets[i])
-            self.elements.append(reader.read_0_string())
+            self.value.append(reader.read_0_string())
         reader.seek(old_position)
         return self
 
@@ -170,12 +169,12 @@ class ByamlPathArrayNode(ByamlElementNode):
         # Read the element offsets.
         offsets = reader.read_uint32s(length + 1)
         # Read the strings by seeking to their element offset and then back.
-        self.elements = []
+        self.value = []
         old_position = reader.tell()
         for i in range(0, length):
             reader.seek(node_offset + offsets[i])
             point_count = (offsets[i + 1] - offsets[i]) // 0x1C
-            self.elements.append(ByamlPath.from_file(reader, point_count))
+            self.value.append(ByamlPath.from_file(reader, point_count))
         reader.seek(old_position)
         return self
 
