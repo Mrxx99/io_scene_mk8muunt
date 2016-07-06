@@ -84,16 +84,21 @@ class Importer:
 
     def _convert_area(self, area):
         addon.log(2, "AREA")
-        # Create a cube representing the Area.
-        ob = bpy.data.objects.new("Area", None)
-        ob.empty_draw_size = 10
+        # Create a wireframe object with a mesh representing the Area.
+        area_shape = editing.MK8PropsObjectArea.AreaShape(area["AreaShape"].value)
+        if area_shape == editing.MK8PropsObjectArea.AreaShape.Cube:
+            mesh = addon.get_default_model(addon.DefaultModel.AreaCube)
+        elif area_shape == editing.MK8PropsObjectArea.AreaShape.Sphere:
+            mesh = addon.get_default_model(addon.DefaultModel.AreaSphere)
+        ob = bpy.data.objects.new("Area", mesh)
+        ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = str(int(editing.MK8PropsObject.ObjectType.Area))
         ob.mk8area.unit_id_num = area["UnitIdNum"].value
         ob.mk8area.area_shape = str(area["AreaShape"].value)
         if ob.mk8area.area_shape == "0":
             ob.empty_draw_type = "CUBE"
-        elif ob.mk8area.area_shape == "1": # TODO: This might not be a sphere (though it seems to be).
+        elif ob.mk8area.area_shape == "1":
             ob.empty_draw_type = "SPHERE"
         ob.mk8area.area_type = str(area["AreaType"].value)
         ob.mk8area.area_path = area.get_value("Area_Path", 0)
@@ -106,7 +111,7 @@ class Importer:
             for i in range(0, len(camera_areas)):
                 ob.mk8area.camera_areas.add().value = camera_areas[i].value
         # Transform
-        ob.scale = area["Scale"].to_vector() * 5 # TODO: Find correct scales. The objects are obviously offset along Z.
+        ob.scale = area["Scale"].to_vector()
         ob.rotation_euler = area["Rotate"].to_vector()
         ob.location = area["Translate"].to_vector()
         # Group and link.

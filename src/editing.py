@@ -188,7 +188,7 @@ class MK8PropsObjectAreaCameraArea(bpy.types.PropertyGroup):
 class MK8PropsObjectArea(bpy.types.PropertyGroup):
     class AreaShape(enum.IntEnum):
         Cube = 0,
-        Sphere = 1 # TODO: This might not be a sphere.
+        Sphere = 1
 
     class AreaType(enum.IntEnum):
         No = 0
@@ -206,7 +206,7 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
         name="Shape",
         description="Specifies the outer form of the region this area spans.",
         items=[("0", "Cube", "The area spans a cuboid region."),
-               ("1", "Sphere (?)", "The area spans a spherical region (unsure: appears only twice in Big Blue).")]
+               ("1", "Sphere", "The area spans a spherical region.")]
     )
     area_type = bpy.props.EnumProperty(
         name="Type",

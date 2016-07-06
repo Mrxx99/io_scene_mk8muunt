@@ -12,7 +12,7 @@ bl_info = {
     "category": "Import-Export"
 }
 
-# Reload the classes when reloading add-ons in Blender with F8.
+# Reload the package modules when reloading add-ons in Blender with F8.
 if "bpy" in locals():
     import importlib
     if "binary_io"  in locals(): importlib.reload(binary_io)
@@ -24,13 +24,9 @@ if "bpy" in locals():
     if "exporting"  in locals(): importlib.reload(exporting)
 
 import bpy
-from . import binary_io
-from . import byaml
 from . import addon
-from . import objflow
 from . import importing
 from . import editing
-from . import exporting
 
 # ---- Registration ----------------------------------------------------------------------------------------------------
 
@@ -62,6 +58,6 @@ def unregister():
     # Exporting
     #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func)
 
-# Register classes of the add-on when Blender runs this script.
+# Register package modules of the add-on when Blender loads the add-on.
 if __name__ == "__main__":
     register()
