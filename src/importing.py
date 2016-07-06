@@ -90,6 +90,8 @@ class Importer:
             mesh = addon.get_default_model(addon.DefaultModel.AreaCube)
         elif area_shape == editing.MK8PropsObjectArea.AreaShape.Sphere:
             mesh = addon.get_default_model(addon.DefaultModel.AreaSphere)
+        else:
+            pass
         ob = bpy.data.objects.new("Area", mesh)
         ob.draw_type = "WIRE"
         # General

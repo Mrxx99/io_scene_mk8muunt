@@ -239,6 +239,10 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
     active_camera_area = bpy.props.IntProperty(
     )
 
+class MK8PanelObjectAreaCameraAreaList(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.label(str(item.value), icon="CAMERA_DATA")
+
 class MK8PanelObjectArea(bpy.types.Panel):
     bl_label = "Mario Kart 8 Area"
     bl_idname = "OBJECT_PT_mk8area"
@@ -265,7 +269,8 @@ class MK8PanelObjectArea(bpy.types.Panel):
         row.prop(obj, "prm1")
         row.prop(obj, "prm2")
         # Camera Areas
-        self.layout.template_list("UI_UL_list", "mk8_camera_areas", obj, "camera_areas", obj, "active_camera_area")
+        self.layout.label("Camera Areas")
+        self.layout.template_list("MK8PanelObjectAreaCameraAreaList", "mk8_camera_areas", obj, "camera_areas", obj, "active_camera_area")
 
 
 # ---- Object Obj ------------------------------------------------------------------------------------------------------
