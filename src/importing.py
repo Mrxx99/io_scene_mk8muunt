@@ -50,9 +50,9 @@ class Importer:
         # Convert the root properties.
         addon.log(0, "BYAML " + self.filename)
         scn = self.context.scene
-        scn.mk8.scene_type = str(int(editing.MK8PropsScene.SceneType.Course))
+        scn.mk8.scene_type = "COURSE"
         scn.mk8course.effect_sw = root.get_value("EffectSW", 0)
-        scn.mk8course.head_light = str(root.get_value("HeadLight", 0))
+        scn.mk8course.head_light = editing.MK8PropsSceneCourse.head_light[1]["items"][root.get_value("HeadLight", 0)][0]
         scn.mk8course.is_first_left = root.get_value("IsFirstLeft", False)
         scn.mk8course.is_jugem_above = root.get_value("IsJugemAbove", False)
         scn.mk8course.jugem_above = root.get_value("JugemAbove", 0)
@@ -85,24 +85,19 @@ class Importer:
     def _convert_area(self, area):
         addon.log(2, "AREA")
         # Create a wireframe object with a mesh representing the Area.
-        area_shape = editing.MK8PropsObjectArea.AreaShape(area["AreaShape"].value)
-        if area_shape == editing.MK8PropsObjectArea.AreaShape.Cube:
-            mesh = addon.get_default_model(addon.DefaultModel.AreaCube)
-        elif area_shape == editing.MK8PropsObjectArea.AreaShape.Sphere:
-            mesh = addon.get_default_model(addon.DefaultModel.AreaSphere)
-        else:
-            pass
+        area_shape = editing.MK8PropsObjectArea.area_shape[1]["items"][area["AreaShape"].value][0]
+        mesh = addon.get_default_mesh(area_shape)
         ob = bpy.data.objects.new("Area", mesh)
         ob.draw_type = "WIRE"
         # General
-        ob.mk8.object_type = str(int(editing.MK8PropsObject.ObjectType.Area))
+        ob.mk8.object_type = "AREA"
         ob.mk8area.unit_id_num = area["UnitIdNum"].value
-        ob.mk8area.area_shape = str(area["AreaShape"].value)
+        ob.mk8area.area_shape = area_shape
         if ob.mk8area.area_shape == "0":
             ob.empty_draw_type = "CUBE"
         elif ob.mk8area.area_shape == "1":
             ob.empty_draw_type = "SPHERE"
-        ob.mk8area.area_type = str(area["AreaType"].value)
+        ob.mk8area.area_type = editing.MK8PropsObjectArea.area_type[1]["items"][area["AreaType"].value][0]
         ob.mk8area.area_path = area.get_value("Area_Path", 0)
         ob.mk8area.area_pull_path = area.get_value("Area_PullPath", 0)
         ob.mk8area.prm1 = area["prm1"].value
@@ -136,7 +131,7 @@ class Importer:
         ob = bpy.data.objects.new(ob_name, None)
         ob.empty_draw_size = 10
         # General
-        ob.mk8.object_type = str(int(editing.MK8PropsObject.ObjectType.Obj))
+        ob.mk8.object_type = "OBJ"
         ob.mk8obj.unit_id_num = obj["UnitIdNum"].value
         ob.mk8obj.multi_2p = obj["Multi2P"].value
         ob.mk8obj.multi_4p = obj["Multi4P"].value
