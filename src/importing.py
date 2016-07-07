@@ -8,7 +8,7 @@ from . import editing
 
 class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_idname = "import_scene.mk8muunt"
-    bl_label = "Import Mario Kart 8 Course Info"
+    bl_label = "Import MK8 Course Info"
     bl_options = {"UNDO"}
 
     filename_ext = ".byaml"

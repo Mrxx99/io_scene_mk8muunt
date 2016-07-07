@@ -130,12 +130,22 @@ class MK8PanelSceneCourse(bpy.types.Panel):
 # ==== Object ==========================================================================================================
 
 class MK8PropsObject(bpy.types.PropertyGroup):
+    def update_object(self, context):
+        ob = context.object
+        if self.object_type == "NONE":
+            ob.data = None
+        elif self.object_type == "AREA":
+            ob.mk8area.update_object(context)
+        elif self.object_type == "OBJ":
+            ob.mk8obj.update_object(context)
+
     object_type = bpy.props.EnumProperty(
         name="Object Type",
         description="Specifies what kind of course content this object represents.",
         items=(("NONE", "None", "Do not handle this object as course content."),
                ("AREA", "Area", "Handle this object as an area object."),
-               ("OBJ",  "Obj",  "Handle this object as a course object."))
+               ("OBJ",  "Obj",  "Handle this object as a course object.")),
+        update=update_object
     )
 
 class MK8PanelObject(bpy.types.Panel):
@@ -157,7 +167,7 @@ class MK8PropsObjectAreaCameraArea(bpy.types.PropertyGroup):
     )
 
 class MK8PropsObjectArea(bpy.types.PropertyGroup):
-    def update_area_shape(self, context):
+    def update_object(self, context):
         # Ensure the object of the area has the correct mesh.
         ob = context.object
         area = context.object.mk8area
@@ -173,7 +183,7 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
         description="Specifies the outer form of the region this area spans.",
         items=(("AREACUBE",   "Cube",   "The area spans a cuboid region."),
                ("AREASPHERE", "Sphere", "The area spans a spherical region.")),
-        update=update_area_shape
+        update=update_object
     )
     area_type = bpy.props.EnumProperty(
         name="Type",
@@ -245,6 +255,12 @@ class MK8PanelObjectArea(bpy.types.Panel):
 # ---- Object Obj ------------------------------------------------------------------------------------------------------
 
 class MK8PropsObjectObj(bpy.types.PropertyGroup):
+    def update_object(self, context):
+        # Ensure the object of the area has the correct mesh.
+        ob = context.object
+        ob.data = None
+        ob.empty_draw_type = "PLAIN_AXES"
+
     unit_id_num = bpy.props.IntProperty(
         name="Unit ID",
         min=0

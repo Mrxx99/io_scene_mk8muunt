@@ -4,7 +4,7 @@ from . import binary_io
 
 class ExportOperator(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     bl_idname = "export_scene.mk8muunt"
-    bl_label = "Export Mario Kart 8 Course Info"
+    bl_label = "Export MK8 Course Info"
 
     filename_ext = ".byaml"
     filter_glob = bpy.props.StringProperty(
