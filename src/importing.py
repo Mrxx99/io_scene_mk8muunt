@@ -72,16 +72,16 @@ class Importer:
         addon.log(0, "BYAML " + self.filename)
         scn = self.context.scene
         scn.mk8.scene_type = "COURSE"
-        scn.mk8course.effect_sw = root.get_value("EffectSW", 0)
-        scn.mk8course.head_light = editing.MK8PropsSceneCourse.head_light[1]["items"][root.get_value("HeadLight", 0)][0]
-        scn.mk8course.is_first_left = root.get_value("IsFirstLeft", False)
-        scn.mk8course.is_jugem_above = root.get_value("IsJugemAbove", False)
-        scn.mk8course.jugem_above = root.get_value("JugemAbove", 0)
-        scn.mk8course.lap_jugem_pos = root.get_value("LapJugemPos", 0)
-        scn.mk8course.lap_number = root.get_value("LapNumber", 0)
+        scn.mk8_course.effect_sw = root.get_value("EffectSW", 0)
+        scn.mk8_course.head_light = editing.MK8PropsSceneCourse.head_light[1]["items"][root.get_value("HeadLight", 0)][0]
+        scn.mk8_course.is_first_left = root.get_value("IsFirstLeft", False)
+        scn.mk8_course.is_jugem_above = root.get_value("IsJugemAbove", False)
+        scn.mk8_course.jugem_above = root.get_value("JugemAbove", 0)
+        scn.mk8_course.lap_jugem_pos = root.get_value("LapJugemPos", 0)
+        scn.mk8_course.lap_number = root.get_value("LapNumber", 0)
         for i in range(1, 9):
-            setattr(scn.mk8course, "obj_prm_" + str(i), root.get_value("OBJPrm" + str(i), 0))
-        scn.mk8course.pattern_num = root.get_value("PatternNum", 0)
+            setattr(scn.mk8_course, "obj_prm_" + str(i), root.get_value("OBJPrm" + str(i), 0))
+        scn.mk8_course.pattern_num = root.get_value("PatternNum", 0)
         # TODO: Convert all sub node types.
         if self.operator.import_area:        self._convert_areas(root)
         if self.operator.import_clip_area:   self._convert_clip_areas(root)
@@ -113,18 +113,18 @@ class Importer:
         ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = "AREA"
-        ob.mk8area.unit_id_num = area["UnitIdNum"].value
-        ob.mk8area.prm1 = area["prm1"].value
-        ob.mk8area.prm2 = area["prm2"].value
-        ob.mk8area.area_shape = area_shape
-        ob.mk8area.area_type = editing.MK8PropsObjectArea.area_type[1]["items"][area["AreaType"].value][0]
-        ob.mk8area.area_path = area.get_value("Area_Path", 0)
-        ob.mk8area.area_pull_path = area.get_value("Area_PullPath", 0)
+        ob.mk8_area.unit_id_num = area["UnitIdNum"].value
+        ob.mk8_area.prm1 = area["prm1"].value
+        ob.mk8_area.prm2 = area["prm2"].value
+        ob.mk8_area.area_shape = area_shape
+        ob.mk8_area.area_type = editing.MK8PropsObjectArea.area_type[1]["items"][area["AreaType"].value][0]
+        ob.mk8_area.area_path = area.get_value("Area_Path", 0)
+        ob.mk8_area.area_pull_path = area.get_value("Area_PullPath", 0)
         # Camera Areas
         camera_areas = area.get_value("Camera_Area")
         if camera_areas:
             for i in range(0, len(camera_areas)):
-                ob.mk8area.camera_areas.add().value = camera_areas[i].value
+                ob.mk8_area.camera_areas.add().value = camera_areas[i].value
         # Transform
         ob.scale = area["Scale"].to_vector()
         ob.rotation_euler = area["Rotate"].to_vector()
@@ -151,12 +151,12 @@ class Importer:
         ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = "CLIPAREA"
-        ob.mk8cliparea.unit_id_num = clip_area["UnitIdNum"].value
-        ob.mk8cliparea.prm1 = clip_area["prm1"].value
-        ob.mk8cliparea.prm2 = clip_area["prm2"].value
-        ob.mk8cliparea.area_shape = area_shape
+        ob.mk8_clip_area.unit_id_num = clip_area["UnitIdNum"].value
+        ob.mk8_clip_area.prm1 = clip_area["prm1"].value
+        ob.mk8_clip_area.prm2 = clip_area["prm2"].value
+        ob.mk8_clip_area.area_shape = area_shape
         area_type = clip_area["AreaType"].value
-        if    area_type == 5: ob.mk8cliparea.area_type = "UNKNOWN5"
+        if    area_type == 5: ob.mk8_clip_area.area_type = "UNKNOWN5"
         else: raise AssertionError("Unknown clip area type.")
         # Transform
         ob.scale = clip_area["Scale"].to_vector()
@@ -183,10 +183,10 @@ class Importer:
         ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = "EFFECTAREA"
-        ob.mk8effectarea.unit_id_num = effect_area["UnitIdNum"].value
-        ob.mk8effectarea.prm1 = effect_area["prm1"].value
-        ob.mk8effectarea.prm2 = effect_area["prm2"].value
-        ob.mk8effectarea.effect_sw = effect_area["EffectSW"].value
+        ob.mk8_effect_area.unit_id_num = effect_area["UnitIdNum"].value
+        ob.mk8_effect_area.prm1 = effect_area["prm1"].value
+        ob.mk8_effect_area.prm2 = effect_area["prm2"].value
+        ob.mk8_effect_area.effect_sw = effect_area["EffectSW"].value
         # Transform
         ob.scale = effect_area["Scale"].to_vector()
         ob.rotation_euler = effect_area["Rotate"].to_vector()
@@ -212,24 +212,24 @@ class Importer:
         ob.empty_draw_size = 10
         # General
         ob.mk8.object_type = "OBJ"
-        ob.mk8obj.unit_id_num = obj["UnitIdNum"].value
-        ob.mk8obj.multi_2p = obj["Multi2P"].value
-        ob.mk8obj.multi_4p = obj["Multi4P"].value
-        ob.mk8obj.obj_id = obj["ObjId"].value
-        ob.mk8obj.speed = obj["Speed"].value
-        ob.mk8obj.obj_path_point = obj.get_value("Obj_PathPoint", 0)
-        ob.mk8obj.obj_path = obj.get_value("Obj_Path", 0)
-        ob.mk8obj.obj_obj_path = obj.get_value("Obj_ObjPath", 0)
-        ob.mk8obj.obj_enemy_path_1 = obj.get_value("Obj_EnemyPath1", 0)
-        ob.mk8obj.obj_enemy_path_2 = obj.get_value("Obj_EnemyPath2", 0)
-        ob.mk8obj.obj_item_path_1 = obj.get_value("Obj_ItemPath1", 0)
-        ob.mk8obj.obj_item_path_2 = obj.get_value("Obj_ItemPath2", 0)
-        ob.mk8obj.top_view = obj["TopView"].value
-        ob.mk8obj.wifi = obj["WiFi"].value
-        ob.mk8obj.wifi_2p = obj["WiFi2P"].value
+        ob.mk8_obj.unit_id_num = obj["UnitIdNum"].value
+        ob.mk8_obj.multi_2p = obj["Multi2P"].value
+        ob.mk8_obj.multi_4p = obj["Multi4P"].value
+        ob.mk8_obj.obj_id = obj["ObjId"].value
+        ob.mk8_obj.speed = obj["Speed"].value
+        ob.mk8_obj.obj_path_point = obj.get_value("Obj_PathPoint", 0)
+        ob.mk8_obj.obj_path = obj.get_value("Obj_Path", 0)
+        ob.mk8_obj.obj_obj_path = obj.get_value("Obj_ObjPath", 0)
+        ob.mk8_obj.obj_enemy_path_1 = obj.get_value("Obj_EnemyPath1", 0)
+        ob.mk8_obj.obj_enemy_path_2 = obj.get_value("Obj_EnemyPath2", 0)
+        ob.mk8_obj.obj_item_path_1 = obj.get_value("Obj_ItemPath1", 0)
+        ob.mk8_obj.obj_item_path_2 = obj.get_value("Obj_ItemPath2", 0)
+        ob.mk8_obj.top_view = obj["TopView"].value
+        ob.mk8_obj.wifi = obj["WiFi"].value
+        ob.mk8_obj.wifi_2p = obj["WiFi2P"].value
         # Parameters
         for i, param in enumerate(obj["Params"]):
-            setattr(ob.mk8obj, "prm_" + str(i), param.value)
+            setattr(ob.mk8_obj, "prm_" + str(i), param.value)
         # Transform
         ob.scale = obj["Scale"].to_vector()
         ob.rotation_euler = obj["Rotate"].to_vector()

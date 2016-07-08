@@ -98,32 +98,32 @@ class MK8PanelSceneCourse(bpy.types.Panel):
         return context.scene.mk8.scene_type == "COURSE"
 
     def draw(self, context):
-        self.layout.prop(context.scene.mk8course, "lap_number")
-        self.layout.prop(context.scene.mk8course, "head_light")
+        self.layout.prop(context.scene.mk8_course, "lap_number")
+        self.layout.prop(context.scene.mk8_course, "head_light")
         row = self.layout.row()
-        row.prop(context.scene.mk8course, "is_jugem_above")
-        row.prop(context.scene.mk8course, "jugem_above")
+        row.prop(context.scene.mk8_course, "is_jugem_above")
+        row.prop(context.scene.mk8_course, "jugem_above")
         row = self.layout.row()
-        row.prop(context.scene.mk8course, "is_first_left")
-        row.prop(context.scene.mk8course, "lap_jugem_pos")
+        row.prop(context.scene.mk8_course, "is_first_left")
+        row.prop(context.scene.mk8_course, "lap_jugem_pos")
         row = self.layout.row()
-        row.prop(context.scene.mk8course, "effect_sw")
-        row.prop(context.scene.mk8course, "pattern_num")
+        row.prop(context.scene.mk8_course, "effect_sw")
+        row.prop(context.scene.mk8_course, "pattern_num")
         # Obj Parameters
-        box = self.layout.mk8_colbox(context.scene.mk8course, "obj_prms_expanded")
-        if context.scene.mk8course.obj_prms_expanded:
+        box = self.layout.mk8_colbox(context.scene.mk8_course, "obj_prms_expanded")
+        if context.scene.mk8_course.obj_prms_expanded:
             row = box.row()
-            row.prop(context.scene.mk8course, "obj_prm_1")
-            row.prop(context.scene.mk8course, "obj_prm_2")
+            row.prop(context.scene.mk8_course, "obj_prm_1")
+            row.prop(context.scene.mk8_course, "obj_prm_2")
             row = box.row()
-            row.prop(context.scene.mk8course, "obj_prm_3")
-            row.prop(context.scene.mk8course, "obj_prm_4")
+            row.prop(context.scene.mk8_course, "obj_prm_3")
+            row.prop(context.scene.mk8_course, "obj_prm_4")
             row = box.row()
-            row.prop(context.scene.mk8course, "obj_prm_5")
-            row.prop(context.scene.mk8course, "obj_prm_6")
+            row.prop(context.scene.mk8_course, "obj_prm_5")
+            row.prop(context.scene.mk8_course, "obj_prm_6")
             row = box.row()
-            row.prop(context.scene.mk8course, "obj_prm_7")
-            row.prop(context.scene.mk8course, "obj_prm_8")
+            row.prop(context.scene.mk8_course, "obj_prm_7")
+            row.prop(context.scene.mk8_course, "obj_prm_8")
 
 # ==== Object ==========================================================================================================
 
@@ -132,10 +132,10 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ob = context.object
         if bool(ob):
             if   self.object_type == "NONE":       ob.data = None # Does not seem to have an effect.
-            elif self.object_type == "AREA":       ob.mk8area.update_object(context)
-            elif self.object_type == "CLIPAREA":   ob.mk8cliparea.update_object(context)
-            elif self.object_type == "EFFECTAREA": ob.mk8effectarea.update_object(context)
-            elif self.object_type == "OBJ":        ob.mk8obj.update_object(context)
+            elif self.object_type == "AREA":       ob.mk8_area.update_object(context)
+            elif self.object_type == "CLIPAREA":   ob.mk8_clip_area.update_object(context)
+            elif self.object_type == "EFFECTAREA": ob.mk8_effect_area.update_object(context)
+            elif self.object_type == "OBJ":        ob.mk8_obj.update_object(context)
 
     object_type = bpy.props.EnumProperty(
         name="Object Type",
@@ -170,7 +170,7 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
         # Ensure the object of the area has the correct mesh.
         ob = context.object
         if bool(ob):
-            area = context.object.mk8area
+            area = context.object.mk8_area
             ob.data = addon.get_default_mesh(area.area_shape)
             ob.draw_type = "WIRE"
 
@@ -233,7 +233,7 @@ class MK8PanelObjectArea(bpy.types.Panel):
         return context.object.mk8.object_type == "AREA"
 
     def draw(self, context):
-        area = context.object.mk8area
+        area = context.object.mk8_area
         self.layout.prop(area, "unit_id_num")
         row = self.layout.row(align=True)
         row.prop(area, "prm1")
@@ -256,7 +256,7 @@ class MK8PropsObjectClipArea(bpy.types.PropertyGroup):
         # Ensure the object of the clip area has the correct mesh.
         ob = context.object
         if bool(ob):
-            clip_area = context.object.mk8cliparea
+            clip_area = context.object.mk8_clip_area
             ob.data = addon.get_default_mesh(clip_area.area_shape)
             ob.draw_type = "WIRE"
 
@@ -292,17 +292,23 @@ class MK8PanelObjectClipArea(bpy.types.Panel):
         return context.object.mk8.object_type == "CLIPAREA"
 
     def draw(self, context):
-        area = context.object.mk8area
-        self.layout.prop(area, "unit_id_num")
+        clip_area = context.object.mk8_clip_area
+        self.layout.prop(clip_area, "unit_id_num")
         row = self.layout.row(align=True)
-        row.prop(area, "prm1")
-        row.prop(area, "prm2")
-        self.layout.prop(area, "area_shape")
-        self.layout.prop(area, "area_type")
+        row.prop(clip_area, "prm1")
+        row.prop(clip_area, "prm2")
+        self.layout.prop(clip_area, "area_type")
 
 # ---- Object EffectArea -----------------------------------------------------------------------------------------------
 
 class MK8PropsObjectEffectArea(bpy.types.PropertyGroup):
+    def update_object(self, context):
+        # Ensure the object of the area has the correct mesh.
+        ob = context.object
+        if bool(ob):
+            ob.data = addon.get_default_mesh("@AREACUBE")
+            ob.draw_type = "WIRE"
+
     unit_id_num = bpy.props.IntProperty(
         name="Unit ID",
         min=0
@@ -329,7 +335,7 @@ class MK8PanelObjectEffectArea(bpy.types.Panel):
         return context.object.mk8.object_type == "EFFECTAREA"
 
     def draw(self, context):
-        effect_area = context.object.mk8effectarea
+        effect_area = context.object.mk8_effect_area
         self.layout.prop(effect_area, "unit_id_num")
         row = self.layout.row(align=True)
         row.prop(effect_area, "prm1")
@@ -449,7 +455,7 @@ class MK8PanelObjectObj(bpy.types.Panel):
         return context.object.mk8.object_type == "OBJ"
 
     def draw(self, context):
-        obj = context.object.mk8obj
+        obj = context.object.mk8_obj
         self.layout.prop(obj, "unit_id_num")
         row = self.layout.row(align=True)
         row.prop(obj, "obj_id")

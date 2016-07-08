@@ -32,7 +32,7 @@ def create_default_area_cube():
     ))
     bmesh.ops.create_cube(bm, matrix=mx)
     # Create a mesh out of it and return it.
-    mesh = bpy.data.meshes.new("@AreaCube")
+    mesh = bpy.data.meshes.new("@AREACUBE")
     bm.to_mesh(mesh)
     bm.free()
     return mesh
@@ -48,7 +48,7 @@ def create_default_area_sphere():
     ))
     bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, diameter=0.5, matrix=mx)
     # Create a mesh out of it and return it.
-    mesh = bpy.data.meshes.new("@AreaSphere")
+    mesh = bpy.data.meshes.new("@AREASPHERE")
     bm.to_mesh(mesh)
     bm.free()
     return mesh
