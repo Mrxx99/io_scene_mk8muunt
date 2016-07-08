@@ -2,7 +2,7 @@ bl_info = {
     "name": "Mario Kart 8 Course Info format",
     "description": "Import-Export Mario Kart 8 Course info",
     "author": "Syroot",
-    "version": (0, 1, 1),
+    "version": (0, 1, 2),
     "blender": (2, 75, 0),
     "location": "File > Import-Export",
     "warning": "This add-on is under development.",
@@ -36,11 +36,13 @@ def register():
     bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func)
     # Editing
     bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
-    bpy.types.Scene.mk8       = bpy.props.PointerProperty(type=editing.MK8PropsScene)
-    bpy.types.Scene.mk8course = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
-    bpy.types.Object.mk8      = bpy.props.PointerProperty(type=editing.MK8PropsObject)
-    bpy.types.Object.mk8area  = bpy.props.PointerProperty(type=editing.MK8PropsObjectArea)
-    bpy.types.Object.mk8obj   = bpy.props.PointerProperty(type=editing.MK8PropsObjectObj)
+    bpy.types.Scene.mk8            = bpy.props.PointerProperty(type=editing.MK8PropsScene)
+    bpy.types.Scene.mk8course      = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
+    bpy.types.Object.mk8           = bpy.props.PointerProperty(type=editing.MK8PropsObject)
+    bpy.types.Object.mk8area       = bpy.props.PointerProperty(type=editing.MK8PropsObjectArea)
+    bpy.types.Object.mk8cliparea   = bpy.props.PointerProperty(type=editing.MK8PropsObjectClipArea)
+    bpy.types.Object.mk8effectarea = bpy.props.PointerProperty(type=editing.MK8PropsObjectEffectArea)
+    bpy.types.Object.mk8obj        = bpy.props.PointerProperty(type=editing.MK8PropsObjectObj)
     # Exporting
     #bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func)
 
@@ -54,6 +56,8 @@ def unregister():
     del bpy.types.Scene.mk8course
     del bpy.types.Object.mk8
     del bpy.types.Object.mk8area
+    del bpy.types.Object.mk8cliparea
+    del bpy.types.Object.mk8effectarea
     del bpy.types.Object.mk8obj
     # Exporting
     #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func)

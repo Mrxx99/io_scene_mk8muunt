@@ -23,9 +23,30 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
         default=""
     )
 
+    import_area = bpy.props.BoolProperty(
+        name="Import Areas",
+        description="Imports Area instances.",
+        default=True
+    )
+    import_clip_area = bpy.props.BoolProperty(
+        name="Import Clip Areas",
+        description="Imports Clip Area instances.",
+        default=True
+    )
+    import_effect_area = bpy.props.BoolProperty(
+        name="Import Effect Area",
+        description="Imports Effect Area instances.",
+        default=True
+    )
+    import_obj = bpy.props.BoolProperty(
+        name="Import Objs",
+        description="Imports Obj instances which represent animated or interactive objects on the course.",
+        default=True
+    )
+
     @staticmethod
     def menu_func(self, context):
-        self.layout.operator(ImportOperator.bl_idname, text="Mario Kart 8 Course Info (muunt.byaml)")
+        self.layout.operator(ImportOperator.bl_idname, text="MK8 Course Info (muunt.byaml)")
 
     def execute(self, context):
         importer = Importer(self, context, self.properties.filepath)
@@ -62,9 +83,10 @@ class Importer:
             setattr(scn.mk8course, "obj_prm_" + str(i), root.get_value("OBJPrm" + str(i), 0))
         scn.mk8course.pattern_num = root.get_value("PatternNum", 0)
         # TODO: Convert all sub node types.
-        self._convert_areas(root)
-        self._convert_objs(root)
-        # alias existing group, or generate new group and alias that
+        if self.operator.import_area:        self._convert_areas(root)
+        if self.operator.import_clip_area:   self._convert_clip_areas(root)
+        if self.operator.import_effect_area: self._convert_effect_areas(root)
+        if self.operator.import_obj:         self._convert_objs(root)
 
     def _add_to_group(self, ob, group_name):
         # Get or create the required group.
@@ -92,16 +114,12 @@ class Importer:
         # General
         ob.mk8.object_type = "AREA"
         ob.mk8area.unit_id_num = area["UnitIdNum"].value
+        ob.mk8area.prm1 = area["prm1"].value
+        ob.mk8area.prm2 = area["prm2"].value
         ob.mk8area.area_shape = area_shape
-        if ob.mk8area.area_shape == "0":
-            ob.empty_draw_type = "CUBE"
-        elif ob.mk8area.area_shape == "1":
-            ob.empty_draw_type = "SPHERE"
         ob.mk8area.area_type = editing.MK8PropsObjectArea.area_type[1]["items"][area["AreaType"].value][0]
         ob.mk8area.area_path = area.get_value("Area_Path", 0)
         ob.mk8area.area_pull_path = area.get_value("Area_PullPath", 0)
-        ob.mk8area.prm1 = area["prm1"].value
-        ob.mk8area.prm2 = area["prm2"].value
         # Camera Areas
         camera_areas = area.get_value("Camera_Area")
         if camera_areas:
@@ -112,7 +130,69 @@ class Importer:
         ob.rotation_euler = area["Rotate"].to_vector()
         ob.location = area["Translate"].to_vector()
         # Group and link.
-        self._add_to_group(ob, "Areas")
+        self._add_to_group(ob, "Area")
+        bpy.context.scene.objects.link(ob)
+
+    # ---- Clip Area ----
+
+    def _convert_clip_areas(self, root):
+        clip_areas = root.get("ClipArea")
+        if clip_areas:
+            addon.log(1, "CLIPAREA[" + str(len(clip_areas)) + "]")
+            for clip_area in clip_areas:
+                self._convert_clip_area(clip_area)
+
+    def _convert_clip_area(self, clip_area):
+        addon.log(2, "CLIPAREA")
+        # Create a wireframe object with a mesh representing the Clip Area.
+        area_shape = editing.MK8PropsObjectClipArea.area_shape[1]["items"][clip_area["AreaShape"].value][0]
+        mesh = addon.get_default_mesh(area_shape)
+        ob = bpy.data.objects.new("ClipArea", mesh)
+        ob.draw_type = "WIRE"
+        # General
+        ob.mk8.object_type = "CLIPAREA"
+        ob.mk8cliparea.unit_id_num = clip_area["UnitIdNum"].value
+        ob.mk8cliparea.prm1 = clip_area["prm1"].value
+        ob.mk8cliparea.prm2 = clip_area["prm2"].value
+        ob.mk8cliparea.area_shape = area_shape
+        area_type = clip_area["AreaType"].value
+        if    area_type == 5: ob.mk8cliparea.area_type = "UNKNOWN5"
+        else: raise AssertionError("Unknown clip area type.")
+        # Transform
+        ob.scale = clip_area["Scale"].to_vector()
+        ob.rotation_euler = clip_area["Rotate"].to_vector()
+        ob.location = clip_area["Translate"].to_vector()
+        # Group and link.
+        self._add_to_group(ob, "ClipArea")
+        bpy.context.scene.objects.link(ob)
+
+    # ---- Effect Area ----
+
+    def _convert_effect_areas(self, root):
+        effect_areas = root.get("EffectArea")
+        if effect_areas:
+            addon.log(1, "EFFECTAREA[" + str(len(effect_areas)) + "]")
+            for effect_area in effect_areas:
+                self._convert_effect_area(effect_area)
+
+    def _convert_effect_area(self, effect_area):
+        addon.log(2, "EFFECTAREA")
+        # Create a wireframe object with a mesh representing the Effect Area.
+        mesh = addon.get_default_mesh("AREACUBE")
+        ob = bpy.data.objects.new("EffectArea", mesh)
+        ob.draw_type = "WIRE"
+        # General
+        ob.mk8.object_type = "EFFECTAREA"
+        ob.mk8effectarea.unit_id_num = effect_area["UnitIdNum"].value
+        ob.mk8effectarea.prm1 = effect_area["prm1"].value
+        ob.mk8effectarea.prm2 = effect_area["prm2"].value
+        ob.mk8effectarea.effect_sw = effect_area["EffectSW"].value
+        # Transform
+        ob.scale = effect_area["Scale"].to_vector()
+        ob.rotation_euler = effect_area["Rotate"].to_vector()
+        ob.location = effect_area["Translate"].to_vector()
+        # Group and link.
+        self._add_to_group(ob, "EffectArea")
         bpy.context.scene.objects.link(ob)
 
     # ---- Obj ----
@@ -155,5 +235,5 @@ class Importer:
         ob.rotation_euler = obj["Rotate"].to_vector()
         ob.location = obj["Translate"].to_vector()
         # Group and link.
-        self._add_to_group(ob, "Objs")
+        self._add_to_group(ob, "Obj")
         bpy.context.scene.objects.link(ob)

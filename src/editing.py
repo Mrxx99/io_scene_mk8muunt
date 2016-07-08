@@ -14,7 +14,6 @@ class MK8PropsScene(bpy.types.PropertyGroup):
 
 class MK8PanelScene(bpy.types.Panel):
     bl_label = "Mario Kart 8"
-    bl_idname = "SCENE_PT_mk8"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -90,7 +89,6 @@ class MK8PropsSceneCourse(bpy.types.PropertyGroup):
 
 class MK8PanelSceneCourse(bpy.types.Panel):
     bl_label = "Mario Kart 8 Course"
-    bl_idname = "SCENE_PT_mk8course"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -132,25 +130,26 @@ class MK8PanelSceneCourse(bpy.types.Panel):
 class MK8PropsObject(bpy.types.PropertyGroup):
     def update_object(self, context):
         ob = context.object
-        if self.object_type == "NONE":
-            ob.data = None
-        elif self.object_type == "AREA":
-            ob.mk8area.update_object(context)
-        elif self.object_type == "OBJ":
-            ob.mk8obj.update_object(context)
+        if bool(ob):
+            if   self.object_type == "NONE":       ob.data = None # Does not seem to have an effect.
+            elif self.object_type == "AREA":       ob.mk8area.update_object(context)
+            elif self.object_type == "CLIPAREA":   ob.mk8cliparea.update_object(context)
+            elif self.object_type == "EFFECTAREA": ob.mk8effectarea.update_object(context)
+            elif self.object_type == "OBJ":        ob.mk8obj.update_object(context)
 
     object_type = bpy.props.EnumProperty(
         name="Object Type",
         description="Specifies what kind of course content this object represents.",
-        items=(("NONE", "None", "Do not handle this object as course content."),
-               ("AREA", "Area", "Handle this object as an area object."),
-               ("OBJ",  "Obj",  "Handle this object as a course object.")),
+        items=(("NONE",       "None",        "Do not handle this object as course content."),
+               ("AREA",       "Area",        "Handle this object as an area."),
+               ("CLIPAREA",   "Clip Area",   "Handle this object as a clip area"),
+               ("EFFECTAREA", "Effect Area", "Handle this object as an effect area"),
+               ("OBJ",        "Obj",         "Handle this object as a course object.")),
         update=update_object
     )
 
 class MK8PanelObject(bpy.types.Panel):
     bl_label = "Mario Kart 8"
-    bl_idname = "OBJECT_PT_mk8"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -170,13 +169,20 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
     def update_object(self, context):
         # Ensure the object of the area has the correct mesh.
         ob = context.object
-        area = context.object.mk8area
-        ob.data = addon.get_default_mesh(area.area_shape)
-        ob.draw_type = "WIRE"
+        if bool(ob):
+            area = context.object.mk8area
+            ob.data = addon.get_default_mesh(area.area_shape)
+            ob.draw_type = "WIRE"
 
     unit_id_num = bpy.props.IntProperty(
         name="Unit ID",
         min=0
+    )
+    prm1 = bpy.props.FloatProperty(
+        name="Param 1"
+    )
+    prm2 = bpy.props.FloatProperty(
+        name="Param 2"
     )
     area_shape = bpy.props.EnumProperty(
         name="Shape",
@@ -192,8 +198,7 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
                ("UNKNOWN1", "Unknown (1)", "Unknown area type. Appears in Mario Circuit and Twisted Mansion."),
                ("UNKNOWN2", "Unknown (2)", "Unknown area type. Appears almost everywhere."),
                ("PULL",     "Pull",        "Objects are moved along the specified path."),
-               ("UNKNOWN4", "Unknown (4)", "Unknown area type. Appears in Mario Kart Stadium, Royal Raceway and Animal Crossing."),
-               ("UNKNOWN5", "Unknown (5)", "Unknown area type. Appears almost everywhere."))
+               ("UNKNOWN4", "Unknown (4)", "Unknown area type. Appears in Mario Kart Stadium, Royal Raceway and Animal Crossing."))
     )
     area_path = bpy.props.IntProperty(
         name="Path",
@@ -202,12 +207,6 @@ class MK8PropsObjectArea(bpy.types.PropertyGroup):
     area_pull_path = bpy.props.IntProperty(
         name="Pull Path",
         min=0
-    )
-    prm1 = bpy.props.FloatProperty(
-        name="Param 1"
-    )
-    prm2 = bpy.props.FloatProperty(
-        name="Param 2"
     )
     camera_areas = bpy.props.CollectionProperty(
         type=MK8PropsObjectAreaCameraArea
@@ -225,7 +224,6 @@ class MK8ListObjectAreaCameraArea(bpy.types.UIList):
 
 class MK8PanelObjectArea(bpy.types.Panel):
     bl_label = "Mario Kart 8 Area"
-    bl_idname = "OBJECT_PT_mk8area"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -237,6 +235,9 @@ class MK8PanelObjectArea(bpy.types.Panel):
     def draw(self, context):
         area = context.object.mk8area
         self.layout.prop(area, "unit_id_num")
+        row = self.layout.row(align=True)
+        row.prop(area, "prm1")
+        row.prop(area, "prm2")
         self.layout.prop(area, "area_shape")
         # Area Type
         self.layout.prop(area, "area_type")
@@ -244,13 +245,96 @@ class MK8PanelObjectArea(bpy.types.Panel):
             self.layout.prop(area, "area_path")
         elif area.area_type == "PULL":
             self.layout.prop(area, "area_pull_path")
-        # Params
-        row = self.layout.row(align=True)
-        row.prop(area, "prm1")
-        row.prop(area, "prm2")
         # Camera Areas
         self.layout.label("Camera Areas")
         self.layout.template_list("MK8ListObjectAreaCameraArea", "", area, "camera_areas", area, "camera_areas_active")
+
+# ---- Object ClipArea -------------------------------------------------------------------------------------------------
+
+class MK8PropsObjectClipArea(bpy.types.PropertyGroup):
+    def update_object(self, context):
+        # Ensure the object of the clip area has the correct mesh.
+        ob = context.object
+        if bool(ob):
+            clip_area = context.object.mk8cliparea
+            ob.data = addon.get_default_mesh(clip_area.area_shape)
+            ob.draw_type = "WIRE"
+
+    unit_id_num = bpy.props.IntProperty(
+        name="Unit ID",
+        min=0
+    )
+    prm1 = bpy.props.FloatProperty(
+        name="Param 1"
+    )
+    prm2 = bpy.props.FloatProperty(
+        name="Param 2"
+    )
+    area_shape = bpy.props.EnumProperty(
+        name="Shape",
+        description="Specifies the outer form of the region this clip area spans.",
+        items=(("AREACUBE", "Cube", "The clip area spans a cuboid region."),),
+        update=update_object
+    )
+    area_type = bpy.props.EnumProperty(
+        name="Type",
+        items=(("UNKNOWN5", "Unknown (5)", "Unknown clip area type. Appears almost everywhere."),)
+    )
+
+class MK8PanelObjectClipArea(bpy.types.Panel):
+    bl_label = "Mario Kart 8 Clip Area"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.object.mk8.object_type == "CLIPAREA"
+
+    def draw(self, context):
+        area = context.object.mk8area
+        self.layout.prop(area, "unit_id_num")
+        row = self.layout.row(align=True)
+        row.prop(area, "prm1")
+        row.prop(area, "prm2")
+        self.layout.prop(area, "area_shape")
+        self.layout.prop(area, "area_type")
+
+# ---- Object EffectArea -----------------------------------------------------------------------------------------------
+
+class MK8PropsObjectEffectArea(bpy.types.PropertyGroup):
+    unit_id_num = bpy.props.IntProperty(
+        name="Unit ID",
+        min=0
+    )
+    prm1 = bpy.props.FloatProperty(
+        name="Param 1"
+    )
+    prm2 = bpy.props.FloatProperty(
+        name="Param 2"
+    )
+    effect_sw = bpy.props.IntProperty(
+        name="EffectSW",
+        min=0
+    )
+
+class MK8PanelObjectEffectArea(bpy.types.Panel):
+    bl_label = "Mario Kart 8 Effect Area"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        return context.object.mk8.object_type == "EFFECTAREA"
+
+    def draw(self, context):
+        effect_area = context.object.mk8effectarea
+        self.layout.prop(effect_area, "unit_id_num")
+        row = self.layout.row(align=True)
+        row.prop(effect_area, "prm1")
+        row.prop(effect_area, "prm2")
+        self.layout.prop(effect_area, "effect_sw")
 
 # ---- Object Obj ------------------------------------------------------------------------------------------------------
 
@@ -356,7 +440,6 @@ class MK8PropsObjectObj(bpy.types.PropertyGroup):
 
 class MK8PanelObjectObj(bpy.types.Panel):
     bl_label = "Mario Kart 8 Obj"
-    bl_idname = "OBJECT_PT_mk8obj"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"

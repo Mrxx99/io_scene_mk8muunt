@@ -22,7 +22,7 @@ def get_model(obj_id):
     raise NotImplementedError()
 
 def create_default_area_cube():
-    # Create a 100x010x100 cube, offset to sit on the XY axis.
+    # Create a 100x100x100 cube, offset to sit on the XY axis.
     bm = bmesh.new()
     mx = mathutils.Matrix((
         (100,   0,   0,  0),
@@ -38,7 +38,7 @@ def create_default_area_cube():
     return mesh
 
 def create_default_area_sphere():
-    # Create a 100x010x100 sphere , offset to sit on the XY axis.
+    # Create a 100x100x100 sphere , offset to sit on the XY axis.
     bm = bmesh.new()
     mx = mathutils.Matrix((
         (100,   0,   0,  0),

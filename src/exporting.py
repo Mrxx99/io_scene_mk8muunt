@@ -21,7 +21,7 @@ class ExportOperator(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
 
     @staticmethod
     def menu_func(self, context):
-        self.layout.operator(ExportOperator.bl_idname, text ="Mario Kart 8 Course Info (muunt.byaml)")
+        self.layout.operator(ExportOperator.bl_idname, text ="MK8 Course Info (muunt.byaml)")
 
     def execute(self, context):
         exporter = Exporter(self, context, self.properties.filepath)
