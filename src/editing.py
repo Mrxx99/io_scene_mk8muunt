@@ -174,6 +174,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     multi_4p = BoolProperty (name="Exclude 4P",      description="Removes this obj in 4 player offline games.")
     wifi     = BoolProperty (name="Exclude WiFi",    description="Removes this obj in online games.")
     wifi_2p  = BoolProperty (name="Exclude WiFi 2P", description="Removes this obj in 2 player online games.")
+    no_col   = BoolProperty (name="No Collisions",   description="Removes collision detection with this object when set.")
     top_view = BoolProperty (name="Top View")
     # Paths
     speed                = FloatProperty(name="Speed",            description="The speed in which the obj follows its path.")
@@ -278,14 +279,21 @@ class MK8PanelObject(bpy.types.Panel):
             return sub
 
         # Obj ID
-        row = self.layout.row(align=True)
-        row.operator("object.mk8muunt_obj_id_search", text="", icon="MAT_SPHERE_SKY")
+        split = self.layout.split(0.5)
+        col = split.column()
+        row = col.row(align=True)
+        row.operator("object.mk8muunt_obj_id_search", text="", icon="MESH_CUBE")
         row.prop(mk8, "obj_id")
+        col = split.column()
         obj_name = objflow.get_obj_label(context, mk8.obj_id)
         if obj_name:
-            row.label(obj_name)
+            col.label(obj_name, icon="FILE_TICK")
         else:
-            row.label("Unknown", icon="ERROR")
+            col.label("Unknown", icon="ERROR")
+        # Other
+        row = self.layout.row()
+        row.prop(mk8, "no_col")
+        row.prop(mk8, "top_view")
         # Obj Params
         box = self.layout.mk8_colbox(mk8, "params_expanded")
         if mk8.params_expanded:
@@ -326,8 +334,6 @@ class MK8PanelObject(bpy.types.Panel):
             row = box.row(align=True)
             row.prop(mk8, "wifi")
             row.prop(mk8, "wifi_2p")
-        # Other
-        self.layout.prop(mk8, "top_view")
 
 class MK8ListObjectAreaCameraArea(bpy.types.UIList):
     layout_type = "GRID"

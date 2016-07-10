@@ -222,33 +222,34 @@ class Importer:
         ob.mk8.wifi = obj["WiFi"]
         ob.mk8.wifi_2p = obj["WiFi2P"]
         ob.mk8.speed = obj["Speed"]
+        ob.mk8.no_col = obj.get("NoCol", False)
         ob.mk8.top_view = obj["TopView"]
         # Paths
-        value = obj.get("Obj_Path", None)
+        value = obj.get("Obj_Path")
         if value:
             ob.mk8.has_obj_path = True
             ob.mk8.obj_path = value
-            value = obj.get("Obj_PathPoint", None)
+            value = obj.get("Obj_PathPoint")
         if value:
             ob.mk8.has_obj_path_point = True
             ob.mk8.obj_path_point = value
-        value = obj.get("Obj_ObjPath", None)
+        value = obj.get("Obj_ObjPath")
         if value:
             ob.mk8.has_obj_enemy_path_1 = True
             ob.mk8.obj_enemy_path_1 = value
-        value = obj.get("Obj_EnemyPath1", None)
+        value = obj.get("Obj_EnemyPath1")
         if value:
             ob.mk8.has_obj_enemy_path_2 = True
             ob.mk8.obj_enemy_path_2 = value
-        value = obj.get("Obj_EnemyPath2", None)
+        value = obj.get("Obj_EnemyPath2")
         if value:
             ob.mk8.has_obj_path_point = True
             ob.mk8.obj_path_point = value
-        value = obj.get("Obj_ItemPath1", None)
+        value = obj.get("Obj_ItemPath1")
         if value:
             ob.mk8.has_obj_item_path_1 = True
             ob.mk8.obj_item_path_1 = value
-        value = obj.get("Obj_ItemPath2", None)
+        value = obj.get("Obj_ItemPath2")
         if value:
             ob.mk8.has_obj_item_path_2 = True
             ob.mk8.obj_item_path_2 = value

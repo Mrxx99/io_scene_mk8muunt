@@ -28,17 +28,38 @@ class File:
             # Read the root node.
             reader.seek(header.root_offset)
             self.root = self._read_node(reader)
-        return self
 
     def load_root(self, root):
         pass
 
     def save_raw(self, raw):
+        # Prepare the node name, string and path arrays.
+        self._name_array = []
+        self._string_array = []
+        self._path_array = []
+        self._collect_content(self.root)
+        self._name_array = list(set(self._name_array))
+        self._string_array = list(set(self._string_array))
+        self._name_array.sort()
+        self._string_array.sort()
         with binary_io.BinaryWriter(raw) as writer:
             writer.endianness = ">"
             # Write the header.
             writer.write_raw_string("BY")
             writer.write_uint16(0x0001)
+
+    def _collect_content(self, node):
+        if isinstance(node, str):
+            self._string_array.append(node)
+        elif isinstance(node, Path):
+            self._path_array.append(node)
+        elif isinstance(node, list):
+            for value in node:
+                self._collect_content(value)
+        elif isinstance(node, dict):
+            for key, value in node.items():
+                self._name_array.append(key)
+                self._collect_content(value)
 
     def _read_node(self, reader, node_type=None):
         # Read the node type if it has not been provided yet.
@@ -67,8 +88,8 @@ class File:
             return value
         else:
             # Read the following uint32 representing the value directly.
-            if   node_type == NodeType.StringIndex: return self._read_string(reader)
-            elif node_type == NodeType.PathIndex:   return self._read_path(reader)
+            if   node_type == NodeType.StringIndex: return self._read_string_index(reader)
+            elif node_type == NodeType.PathIndex:   return self._read_path_index(reader)
             elif node_type == NodeType.Boolean:     return self._read_boolean(reader)
             elif node_type == NodeType.Integer:     return self._read_integer(reader)
             elif node_type == NodeType.Float:       return self._read_float(reader)
@@ -117,15 +138,28 @@ class File:
         old_position = reader.tell()
         for i in range(0, length):
             reader.seek(node_offset + offsets[i])
-            point_count = (offsets[i + 1] - offsets[i]) // 0x1C
-            value.append(Path.from_file(reader, point_count))
+            length = (offsets[i + 1] - offsets[i]) // 0x1C
+            value.append(self._read_path(reader, length))
         reader.seek(old_position)
         return value
 
-    def _read_string(self, reader):
+    def _read_path(self, reader, length):
+        value = Path()
+        for i in range(0, length):
+            value.append(self._read_path_point(reader))
+        return value
+
+    def _read_path_point(self, reader):
+        value = PathPoint()
+        value.position = reader.read_vector_3d()
+        value.normal = reader.read_vector_3d()
+        value.unknown = reader.read_uint32()
+        return value
+
+    def _read_string_index(self, reader):
         return self._string_array[reader.read_uint32()]
 
-    def _read_path(self, reader):
+    def _read_path_index(self, reader):
         return self._path_array[reader.read_uint32()]
 
     def _read_boolean(self, reader):
@@ -168,56 +202,16 @@ class NodeType(enum.IntEnum):
     Integer     = 0xD1, # 209, mapped to int
     Float       = 0xD2  # 210, mapped to float
 
-class Path:
-    @staticmethod
-    def from_file(reader, point_count):
-        self = Path()
-        self.points = []
-        for i in range(0, point_count):
-            self.points.append(PathPoint.from_file(reader))
-        return self
-
-    def __init__(self):
-        self.points = None
-
-    def __delitem__(self, key):
-        del self.points[key]
-
-    def __getitem__(self, item):
-        return self.points[item]
-
-    def __setitem__(self, key, value):
-        self.points[key] = value
-
-    def __len__(self):
-        return len(self.points)
-
-    def __iter__(self):
-        return iter(self.points)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return str(self.points)
-
-class PathPoint:
-    @staticmethod
-    def from_file(reader):
-        self = PathPoint()
-        self.position = reader.read_vector_3d()
-        self.normal = reader.read_vector_3d()
-        self.unknown = reader.read_uint32()
-        return self
-
-    def __init__(self):
-        self.position = None
-        self.normal = None
-        self.unknown = None
-
 class Array:
     def __delitem__(self, key):
         del self._elements[key]
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__) and len(other) == len(self):
+            for element, other_element in zip(self, other):
+                if element != other_element:
+                    return False
+        return True
 
     def __getitem__(self, item):
         return self._elements[item]
@@ -231,6 +225,9 @@ class Array:
 
     def __len__(self):
         return len(self._elements)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __repr__(self):
         return str(self._elements)
@@ -259,3 +256,22 @@ class StringArray(Array):
 class PathArray(Array):
     def __init__(self):
         super().__init__(Path)
+
+class Path(Array):
+    def __init__(self):
+        super().__init__(PathPoint)
+
+class PathPoint:
+    def __eq__(self, other):
+        return isinstance(other, self.__class__)\
+            and self.position == other.position\
+            and self.normal == other.normal\
+            and self.unknown == other.unknown
+
+    def __init__(self):
+        self.position = None
+        self.normal = None
+        self.unknown = None
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

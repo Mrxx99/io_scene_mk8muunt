@@ -83,6 +83,8 @@ class Exporter:
             "Speed": mk8.speed,
             "Params": []
         }
+        if mk8.no_col:
+            obj["NoCol"] = True
         # Params
         for i in range(0, 8):
             obj["Params"].append(getattr(mk8, "int_param_" + str(i + 1)))
