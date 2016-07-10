@@ -1,5 +1,6 @@
 import bpy
 import bpy_extras
+import mathutils
 import os
 from . import byaml
 from . import addon
@@ -7,6 +8,7 @@ from . import objflow
 from . import editing
 
 class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+    """Load a MK8 Course Info file"""
     bl_idname = "import_scene.mk8muunt"
     bl_label = "Import MK8 Course Info"
     bl_options = {"UNDO"}
@@ -26,17 +28,17 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     import_area = bpy.props.BoolProperty(
         name="Import Areas",
         description="Imports Area instances.",
-        default=True
+        default=False
     )
     import_clip_area = bpy.props.BoolProperty(
         name="Import Clip Areas",
         description="Imports Clip Area instances.",
-        default=True
+        default=False
     )
     import_effect_area = bpy.props.BoolProperty(
         name="Import Effect Area",
         description="Imports Effect Area instances.",
-        default=True
+        default=False
     )
     import_obj = bpy.props.BoolProperty(
         name="Import Objs",
@@ -62,9 +64,10 @@ class Importer:
     def run(self):
         # Read in the file data.
         with open(self.filepath, "rb") as raw:
-            byaml_file = byaml.ByamlFile(raw)
+            addon.loaded_byaml = byaml.File()
+            addon.loaded_byaml.load_raw(raw)
         # Import the data into Blender objects.
-        self._convert(byaml_file.root)
+        self._convert(addon.loaded_byaml.root)
         return {"FINISHED"}
 
     def _convert(self, root):
@@ -72,16 +75,16 @@ class Importer:
         addon.log(0, "BYAML " + self.filename)
         scn = self.context.scene
         scn.mk8.scene_type = "COURSE"
-        scn.mk8_course.effect_sw = root.get_value("EffectSW", 0)
-        scn.mk8_course.head_light = editing.MK8PropsSceneCourse.head_light[1]["items"][root.get_value("HeadLight", 0)][0]
-        scn.mk8_course.is_first_left = root.get_value("IsFirstLeft", False)
-        scn.mk8_course.is_jugem_above = root.get_value("IsJugemAbove", False)
-        scn.mk8_course.jugem_above = root.get_value("JugemAbove", 0)
-        scn.mk8_course.lap_jugem_pos = root.get_value("LapJugemPos", 0)
-        scn.mk8_course.lap_number = root.get_value("LapNumber", 0)
+        scn.mk8.effect_sw = root.get("EffectSW", 0)
+        scn.mk8.head_light = editing.MK8PropsScene.head_light[1]["items"][root.get("HeadLight", 0)][0]
+        scn.mk8.is_first_left = root.get("IsFirstLeft", False)
+        scn.mk8.is_jugem_above = root.get("IsJugemAbove", False)
+        scn.mk8.jugem_above = root.get("JugemAbove", 0)
+        scn.mk8.lap_jugem_pos = root.get("LapJugemPos", 0)
+        scn.mk8.lap_number = root.get("LapNumber", 0)
         for i in range(1, 9):
-            setattr(scn.mk8_course, "obj_prm_" + str(i), root.get_value("OBJPrm" + str(i), 0))
-        scn.mk8_course.pattern_num = root.get_value("PatternNum", 0)
+            setattr(scn.mk8, "obj_prm_" + str(i), root.get("OBJPrm" + str(i), 0))
+        scn.mk8.pattern_num = root.get("PatternNum", 0)
         # TODO: Convert all sub node types.
         if self.operator.import_area:        self._convert_areas(root)
         if self.operator.import_clip_area:   self._convert_clip_areas(root)
@@ -107,28 +110,28 @@ class Importer:
     def _convert_area(self, area):
         addon.log(2, "AREA")
         # Create a wireframe object with a mesh representing the Area.
-        area_shape = editing.MK8PropsObjectArea.area_shape[1]["items"][area["AreaShape"].value][0]
+        area_shape = editing.MK8PropsObject.area_shape[1]["items"][area["AreaShape"]][0]
         mesh = addon.get_default_mesh(area_shape)
         ob = bpy.data.objects.new("Area", mesh)
         ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = "AREA"
-        ob.mk8_area.unit_id_num = area["UnitIdNum"].value
-        ob.mk8_area.prm1 = area["prm1"].value
-        ob.mk8_area.prm2 = area["prm2"].value
-        ob.mk8_area.area_shape = area_shape
-        ob.mk8_area.area_type = editing.MK8PropsObjectArea.area_type[1]["items"][area["AreaType"].value][0]
-        ob.mk8_area.area_path = area.get_value("Area_Path", 0)
-        ob.mk8_area.area_pull_path = area.get_value("Area_PullPath", 0)
+        ob.mk8.unit_id_num = area["UnitIdNum"]
+        ob.mk8.float_param_1 = area["prm1"]
+        ob.mk8.float_param_2 = area["prm2"]
+        ob.mk8.area_shape = area_shape
+        ob.mk8.area_type = editing.MK8PropsObject.area_type[1]["items"][area["AreaType"]][0]
+        ob.mk8.area_path = area.get("Area_Path", 0)
+        ob.mk8.area_pull_path = area.get("Area_PullPath", 0)
         # Camera Areas
-        camera_areas = area.get_value("Camera_Area")
+        camera_areas = area.get("Camera_Area")
         if camera_areas:
             for i in range(0, len(camera_areas)):
-                ob.mk8_area.camera_areas.add().value = camera_areas[i].value
+                ob.mk8.camera_areas.add().value = camera_areas[i]
         # Transform
-        ob.scale = area["Scale"].to_vector()
-        ob.rotation_euler = area["Rotate"].to_vector()
-        ob.location = area["Translate"].to_vector()
+        ob.scale = Importer.vector_from_dict(area["Scale"])
+        ob.rotation_euler = Importer.vector_from_dict(area["Rotate"])
+        ob.location = Importer.vector_from_dict(area["Translate"])
         # Group and link.
         self._add_to_group(ob, "Area")
         bpy.context.scene.objects.link(ob)
@@ -145,23 +148,23 @@ class Importer:
     def _convert_clip_area(self, clip_area):
         addon.log(2, "CLIPAREA")
         # Create a wireframe object with a mesh representing the Clip Area.
-        area_shape = editing.MK8PropsObjectClipArea.area_shape[1]["items"][clip_area["AreaShape"].value][0]
-        mesh = addon.get_default_mesh(area_shape)
+        clip_area_shape = editing.MK8PropsObject.clip_area_shape[1]["items"][clip_area["AreaShape"]][0]
+        mesh = addon.get_default_mesh(clip_area_shape)
         ob = bpy.data.objects.new("ClipArea", mesh)
         ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = "CLIPAREA"
-        ob.mk8_clip_area.unit_id_num = clip_area["UnitIdNum"].value
-        ob.mk8_clip_area.prm1 = clip_area["prm1"].value
-        ob.mk8_clip_area.prm2 = clip_area["prm2"].value
-        ob.mk8_clip_area.area_shape = area_shape
-        area_type = clip_area["AreaType"].value
-        if    area_type == 5: ob.mk8_clip_area.area_type = "UNKNOWN5"
+        ob.mk8.unit_id_num = clip_area["UnitIdNum"]
+        ob.mk8.float_param_1 = clip_area["prm1"]
+        ob.mk8.float_param_2 = clip_area["prm2"]
+        ob.mk8.area_shape = clip_area_shape
+        clip_area_type = clip_area["AreaType"]
+        if    clip_area_type == 5: ob.mk8.clip_area_type = "UNKNOWN5"
         else: raise AssertionError("Unknown clip area type.")
         # Transform
-        ob.scale = clip_area["Scale"].to_vector()
-        ob.rotation_euler = clip_area["Rotate"].to_vector()
-        ob.location = clip_area["Translate"].to_vector()
+        ob.scale = Importer.vector_from_dict(clip_area["Scale"])
+        ob.rotation_euler = Importer.vector_from_dict(clip_area["Rotate"])
+        ob.location = Importer.vector_from_dict(clip_area["Translate"])
         # Group and link.
         self._add_to_group(ob, "ClipArea")
         bpy.context.scene.objects.link(ob)
@@ -183,14 +186,14 @@ class Importer:
         ob.draw_type = "WIRE"
         # General
         ob.mk8.object_type = "EFFECTAREA"
-        ob.mk8_effect_area.unit_id_num = effect_area["UnitIdNum"].value
-        ob.mk8_effect_area.prm1 = effect_area["prm1"].value
-        ob.mk8_effect_area.prm2 = effect_area["prm2"].value
-        ob.mk8_effect_area.effect_sw = effect_area["EffectSW"].value
+        ob.mk8.unit_id_num = effect_area["UnitIdNum"]
+        ob.mk8.float_param_1 = effect_area["prm1"]
+        ob.mk8.float_param_2 = effect_area["prm2"]
+        ob.mk8.effect_sw = effect_area["EffectSW"]
         # Transform
-        ob.scale = effect_area["Scale"].to_vector()
-        ob.rotation_euler = effect_area["Rotate"].to_vector()
-        ob.location = effect_area["Translate"].to_vector()
+        ob.scale = Importer.vector_from_dict(effect_area["Scale"])
+        ob.rotation_euler = Importer.vector_from_dict(effect_area["Rotate"])
+        ob.location = Importer.vector_from_dict(effect_area["Translate"])
         # Group and link.
         self._add_to_group(ob, "EffectArea")
         bpy.context.scene.objects.link(ob)
@@ -207,33 +210,59 @@ class Importer:
     def _convert_obj(self, obj):
         addon.log(2, "OBJ " + str(obj["ObjId"]))
         # Create an object representing the Obj (load the real model later on).
-        ob_name = objflow.get_obj_label(self.context, obj["ObjId"].value)
+        ob_name = objflow.get_obj_label(self.context, obj["ObjId"])
         ob = bpy.data.objects.new(ob_name, None)
-        ob.empty_draw_size = 10
+        ob.empty_draw_size = 20
         # General
         ob.mk8.object_type = "OBJ"
-        ob.mk8_obj.unit_id_num = obj["UnitIdNum"].value
-        ob.mk8_obj.multi_2p = obj["Multi2P"].value
-        ob.mk8_obj.multi_4p = obj["Multi4P"].value
-        ob.mk8_obj.obj_id = obj["ObjId"].value
-        ob.mk8_obj.speed = obj["Speed"].value
-        ob.mk8_obj.obj_path_point = obj.get_value("Obj_PathPoint", 0)
-        ob.mk8_obj.obj_path = obj.get_value("Obj_Path", 0)
-        ob.mk8_obj.obj_obj_path = obj.get_value("Obj_ObjPath", 0)
-        ob.mk8_obj.obj_enemy_path_1 = obj.get_value("Obj_EnemyPath1", 0)
-        ob.mk8_obj.obj_enemy_path_2 = obj.get_value("Obj_EnemyPath2", 0)
-        ob.mk8_obj.obj_item_path_1 = obj.get_value("Obj_ItemPath1", 0)
-        ob.mk8_obj.obj_item_path_2 = obj.get_value("Obj_ItemPath2", 0)
-        ob.mk8_obj.top_view = obj["TopView"].value
-        ob.mk8_obj.wifi = obj["WiFi"].value
-        ob.mk8_obj.wifi_2p = obj["WiFi2P"].value
+        ob.mk8.unit_id_num = obj["UnitIdNum"]
+        ob.mk8.obj_id = obj["ObjId"]
+        ob.mk8.multi_2p = obj["Multi2P"]
+        ob.mk8.multi_4p = obj["Multi4P"]
+        ob.mk8.wifi = obj["WiFi"]
+        ob.mk8.wifi_2p = obj["WiFi2P"]
+        ob.mk8.speed = obj["Speed"]
+        ob.mk8.top_view = obj["TopView"]
+        # Paths
+        value = obj.get("Obj_Path", None)
+        if value:
+            ob.mk8.has_obj_path = True
+            ob.mk8.obj_path = value
+            value = obj.get("Obj_PathPoint", None)
+        if value:
+            ob.mk8.has_obj_path_point = True
+            ob.mk8.obj_path_point = value
+        value = obj.get("Obj_ObjPath", None)
+        if value:
+            ob.mk8.has_obj_enemy_path_1 = True
+            ob.mk8.obj_enemy_path_1 = value
+        value = obj.get("Obj_EnemyPath1", None)
+        if value:
+            ob.mk8.has_obj_enemy_path_2 = True
+            ob.mk8.obj_enemy_path_2 = value
+        value = obj.get("Obj_EnemyPath2", None)
+        if value:
+            ob.mk8.has_obj_path_point = True
+            ob.mk8.obj_path_point = value
+        value = obj.get("Obj_ItemPath1", None)
+        if value:
+            ob.mk8.has_obj_item_path_1 = True
+            ob.mk8.obj_item_path_1 = value
+        value = obj.get("Obj_ItemPath2", None)
+        if value:
+            ob.mk8.has_obj_item_path_2 = True
+            ob.mk8.obj_item_path_2 = value
         # Parameters
         for i, param in enumerate(obj["Params"]):
-            setattr(ob.mk8_obj, "prm_" + str(i), param.value)
+            setattr(ob.mk8, "int_param_" + str(i), param)
         # Transform
-        ob.scale = obj["Scale"].to_vector()
-        ob.rotation_euler = obj["Rotate"].to_vector()
-        ob.location = obj["Translate"].to_vector()
+        ob.scale = Importer.vector_from_dict(obj["Scale"])
+        ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"])
+        ob.location = Importer.vector_from_dict(obj["Translate"])
         # Group and link.
         self._add_to_group(ob, "Obj")
         bpy.context.scene.objects.link(ob)
+
+    @staticmethod
+    def vector_from_dict(dictionary):
+        return mathutils.Vector((dictionary["X"], -dictionary["Z"], dictionary["Y"]))

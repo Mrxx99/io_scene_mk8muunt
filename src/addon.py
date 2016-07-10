@@ -2,6 +2,10 @@ import bmesh
 import bpy
 import mathutils
 
+# ---- Globals ---------------------------------------------------------------------------------------------------------
+
+loaded_byaml = None # The currently loaded BYAML file to reuse when exporting non-visualized objects.
+
 # ---- Add-on Preferences ----------------------------------------------------------------------------------------------
 
 class MK8MuuntAddonPreferences(bpy.types.AddonPreferences):
@@ -83,3 +87,4 @@ def mk8_colbox(self, data, expand_property):
     )
     row.label(getattr(data.rna_type, expand_property)[1]["name"])
     return box
+

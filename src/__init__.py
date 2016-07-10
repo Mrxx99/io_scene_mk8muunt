@@ -2,7 +2,7 @@ bl_info = {
     "name": "Mario Kart 8 Course Info format",
     "description": "Import-Export Mario Kart 8 Course info",
     "author": "Syroot",
-    "version": (0, 1, 2),
+    "version": (0, 1, 3),
     "blender": (2, 75, 0),
     "location": "File > Import-Export",
     "warning": "This add-on is under development.",
@@ -15,9 +15,9 @@ bl_info = {
 # Reload the package modules when reloading add-ons in Blender with F8.
 if "bpy" in locals():
     import importlib
+    if "addon"      in locals(): importlib.reload(addon)
     if "binary_io"  in locals(): importlib.reload(binary_io)
     if "byaml"      in locals(): importlib.reload(byaml)
-    if "addon"      in locals(): importlib.reload(addon)
     if "objflow"    in locals(): importlib.reload(objflow)
     if "importing"  in locals(): importlib.reload(importing)
     if "editing"    in locals(): importlib.reload(editing)
@@ -27,40 +27,33 @@ import bpy
 from . import addon
 from . import importing
 from . import editing
+from . import exporting
 
 # ---- Registration ----------------------------------------------------------------------------------------------------
 
 def register():
     bpy.utils.register_module(__name__)
+    # Addon
+    bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
     # Importing
     bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func)
     # Editing
-    bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
-    bpy.types.Scene.mk8              = bpy.props.PointerProperty(type=editing.MK8PropsScene)
-    bpy.types.Scene.mk8_course       = bpy.props.PointerProperty(type=editing.MK8PropsSceneCourse)
-    bpy.types.Object.mk8             = bpy.props.PointerProperty(type=editing.MK8PropsObject)
-    bpy.types.Object.mk8_area        = bpy.props.PointerProperty(type=editing.MK8PropsObjectArea)
-    bpy.types.Object.mk8_clip_area   = bpy.props.PointerProperty(type=editing.MK8PropsObjectClipArea)
-    bpy.types.Object.mk8_effect_area = bpy.props.PointerProperty(type=editing.MK8PropsObjectEffectArea)
-    bpy.types.Object.mk8_obj         = bpy.props.PointerProperty(type=editing.MK8PropsObjectObj)
+    bpy.types.Scene.mk8  = bpy.props.PointerProperty(type=editing.MK8PropsScene)
+    bpy.types.Object.mk8 = bpy.props.PointerProperty(type=editing.MK8PropsObject)
     # Exporting
-    #bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func)
+    bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
+    # Addon
+    del bpy.types.UILayout.mk8_colbox
     # Importing
     bpy.types.INFO_MT_file_import.remove(importing.ImportOperator.menu_func)
     # Editing
-    del bpy.types.UILayout.mk8_colbox
     del bpy.types.Scene.mk8
-    del bpy.types.Scene.mk8_course
     del bpy.types.Object.mk8
-    del bpy.types.Object.mk8_area
-    del bpy.types.Object.mk8_clip_area
-    del bpy.types.Object.mk8_effect_area
-    del bpy.types.Object.mk8_obj
     # Exporting
-    #bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func)
+    bpy.types.INFO_MT_file_export.remove(exporting.ExportOperator.menu_func)
 
 # Register package modules of the add-on when Blender loads the add-on.
 if __name__ == "__main__":
