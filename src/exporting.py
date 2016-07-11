@@ -109,4 +109,4 @@ class Exporter:
 
     @staticmethod
     def dict_from_vector(vector):
-        return { "X": vector.x, "Z": vector.y, "Y": -vector.z }
+        return { "X": vector.x, "Z": -vector.y, "Y": vector.z }
