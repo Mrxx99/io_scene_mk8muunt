@@ -174,22 +174,27 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     wifi_2p  = BoolProperty (name="Exclude WiFi 2P", description="Removes this obj in 2 player online games.")
     no_col   = BoolProperty (name="No Collisions",   description="Removes collision detection with this object when set.")
     top_view = BoolProperty (name="Top View")
+    # Relations
+    has_obj_obj = BoolProperty(name="Has Related Obj", description="Determines whether this Obj has relations to another.")
+    obj_obj     = IntProperty (name="Related Obj",     description="The Obj this Obj has relations to.")
     # Paths
-    speed                = FloatProperty(name="Speed",            description="The speed in which the obj follows its path.")
-    has_obj_path_point   = BoolProperty (name="Has Path",         description="Determines whether a Path Point will be used.")
-    obj_path_point       = IntProperty  (name="Point",            min=0)
-    has_obj_path         = BoolProperty (name="Has Main Path",    description="Determines whether a Path will be used.")
-    obj_path             = IntProperty  (name="Main",             description="The number of the path this obj follows.", min=0)
-    has_obj_obj_path     = BoolProperty (name="Has Obj Path",     description="Determines whether an Obj Path will be used.")
-    obj_obj_path         = IntProperty  (name="Obj",              min=0)
-    has_obj_enemy_path_1 = BoolProperty (name="Has Enemy Path 1", description="Determines whether an Enemy Path 1 will be used.")
-    obj_enemy_path_1     = IntProperty  (name="Enemy 1",          min=0)
-    has_obj_enemy_path_2 = BoolProperty (name="Has Enemy Path 2", description="Determines whether an Enemy Path 2 will be used.")
-    obj_enemy_path_2     = IntProperty  (name="Enemy 2",          min=0)
-    has_obj_item_path_1  = BoolProperty (name="Has Item Path 1",  description="Determines whether an Item Path 1 will be used.")
-    obj_item_path_1      = IntProperty  (name="Item 1",           min=0)
-    has_obj_item_path_2  = BoolProperty (name="Has Item Path 2",  description="Determines whether an Item Path 2 will be used.")
-    obj_item_path_2      = IntProperty  (name="Item 2",           min=0)
+    speed                = FloatProperty(name="Speed",              description="The speed in which the obj follows its path.")
+    has_obj_path         = BoolProperty (name="Has Path",           description="Determines whether a Path will be used.")
+    has_obj_path_point   = BoolProperty (name="Has Path Point",     description="Determines whether a Path Point will be used.")
+    has_obj_obj_path     = BoolProperty (name="Has Obj Path",       description="Determines whether an Obj Path will be used.")
+    has_obj_obj_point    = BoolProperty (name="Has Obj Path Point", description="Determines whether an Obj Path Point will be used.")
+    has_obj_enemy_path_1 = BoolProperty (name="Has Enemy Path 1",   description="Determines whether an Enemy Path 1 will be used.")
+    has_obj_enemy_path_2 = BoolProperty (name="Has Enemy Path 2",   description="Determines whether an Enemy Path 2 will be used.")
+    has_obj_item_path_1  = BoolProperty (name="Has Item Path 1",    description="Determines whether an Item Path 1 will be used.")
+    has_obj_item_path_2  = BoolProperty (name="Has Item Path 2",    description="Determines whether an Item Path 2 will be used.")
+    obj_path             = IntProperty  (name="Path",               description="The number of the path this obj follows.", min=0)
+    obj_path_point       = IntProperty  (name="Path Point",         min=0)
+    obj_obj_path         = IntProperty  (name="Obj",                min=0)
+    obj_obj_point        = IntProperty  (name="Obj Point",          min=0)
+    obj_enemy_path_1     = IntProperty  (name="Enemy 1",            min=0)
+    obj_enemy_path_2     = IntProperty  (name="Enemy 2",            min=0)
+    obj_item_path_1      = IntProperty  (name="Item 1",             min=0)
+    obj_item_path_2      = IntProperty  (name="Item 2",             min=0)
     # UI
     obj_id_enum         = EnumProperty(items=obj_id_enum_items)
     params_expanded     = BoolProperty(name="Params",     description="Expand the Params section or collapse it.",     default=True)
@@ -266,7 +271,7 @@ class MK8PanelObject(bpy.types.Panel):
         self.layout.prop(mk8, "effect_sw")
 
     def draw_obj(self, context, mk8):
-        def path_prop(layout, path):
+        def optional_prop(layout, path):
             # Checkbox
             row = layout.row(align=True)
             row.prop(mk8, "has_" + path, text="")
@@ -292,6 +297,9 @@ class MK8PanelObject(bpy.types.Panel):
         row = self.layout.row()
         row.prop(mk8, "no_col")
         row.prop(mk8, "top_view")
+        # Relations
+        row = self.layout.row()
+        optional_prop(row, "obj_obj")
         # Obj Params
         box = self.layout.mk8_colbox(mk8, "params_expanded")
         if mk8.params_expanded:
@@ -313,16 +321,17 @@ class MK8PanelObject(bpy.types.Panel):
             row = box.row()
             row.prop(mk8, "speed")
             row = box.row()
-            path_prop(row, "obj_path_point")
+            optional_prop(row, "obj_path")
+            optional_prop(row, "obj_path_point")
             row = box.row()
-            path_prop(row, "obj_path")
-            path_prop(row, "obj_obj_path")
+            optional_prop(row, "obj_obj_path")
+            optional_prop(row, "obj_obj_point")
             row = box.row()
-            path_prop(row, "obj_enemy_path_1")
-            path_prop(row, "obj_enemy_path_2")
+            optional_prop(row, "obj_enemy_path_1")
+            optional_prop(row, "obj_enemy_path_2")
             row = box.row()
-            path_prop(row, "obj_item_path_1")
-            path_prop(row, "obj_item_path_2")
+            optional_prop(row, "obj_item_path_1")
+            optional_prop(row, "obj_item_path_2")
         # Exclusions
         box = self.layout.mk8_colbox(mk8, "exclusions_expanded")
         if mk8.exclusions_expanded:

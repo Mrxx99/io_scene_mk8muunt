@@ -90,14 +90,17 @@ class Exporter:
         # Params
         for i in range(1, 9):
             obj["Params"].append(getattr(mk8, "float_param_" + str(i)))
+        # Relations
+        if mk8.has_obj_obj:          obj["Obj_Obj"]        = mk8.obj_obj
         # Paths
-        if mk8.has_obj_path_point:   obj["Obj_PathPoint"]  = mk8.obj_path_point
         if mk8.has_obj_path:         obj["Obj_Path"]       = mk8.obj_path
+        if mk8.has_obj_path_point:   obj["Obj_PathPoint"]  = mk8.obj_path_point
         if mk8.has_obj_obj_path:     obj["Obj_ObjPath"]    = mk8.obj_obj_path
-        if mk8.has_obj_enemy_path_1: obj["Obj_EnemyPath1"] = mk8.has_obj_enemy_path_1
-        if mk8.has_obj_enemy_path_2: obj["Obj_EnemyPath2"] = mk8.has_obj_enemy_path_2
-        if mk8.has_obj_item_path_1:  obj["Obj_ItemPath1"]  = mk8.has_obj_item_path_1
-        if mk8.has_obj_item_path_2:  obj["Obj_ItemPath2"]  = mk8.has_obj_item_path_2
+        if mk8.has_obj_obj_point:    obj["Obj_ObjPoint"]   = mk8.obj_obj_point
+        if mk8.has_obj_enemy_path_1: obj["Obj_EnemyPath1"] = mk8.obj_enemy_path_1
+        if mk8.has_obj_enemy_path_2: obj["Obj_EnemyPath2"] = mk8.obj_enemy_path_2
+        if mk8.has_obj_item_path_1:  obj["Obj_ItemPath1"]  = mk8.obj_item_path_1
+        if mk8.has_obj_item_path_2:  obj["Obj_ItemPath2"]  = mk8.obj_item_path_2
         # Exclusions
         obj["Multi2P"] = mk8.multi_2p
         obj["Multi4P"] = mk8.multi_4p

@@ -350,13 +350,6 @@ class Array:
     def __delitem__(self, key):
         del self._elements[key]
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__) and len(other) == len(self):
-            for element, other_element in zip(self, other):
-                if element != other_element:
-                    return False
-        return True
-
     def __getitem__(self, item):
         return self._elements[item]
 
@@ -372,22 +365,19 @@ class Array:
     def __len__(self):
         return len(self._elements)
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __repr__(self):
         return str(self._elements)
 
     def __setitem__(self, key, value):
-        if self._check_type(value):
-            self._elements[key] = value
+        self._check_type(value)
+        self._elements[key] = value
 
     def __str__(self):
         return str(self._elements)
 
     def append(self, x):
-        if self._check_type(x):
-            self._elements.append(x)
+        self._check_type(x)
+        self._elements.append(x)
 
     def extend(self, x):
         for elem in x:
@@ -399,9 +389,7 @@ class Array:
         return self._elements.index(x)
 
     def _check_type(self, x):
-        if isinstance(x, self._element_type):
-            return True
-        else:
+        if not isinstance(x, self._element_type):
             raise TypeError("Expected "+ self._element_type.__name__ + ", not " + type(x).__name__)
 
 class StringArray(Array):

@@ -208,6 +208,12 @@ class Importer:
                 self._convert_obj(obj)
 
     def _convert_obj(self, obj):
+        def set_optional(name, attribute):
+            value = obj.get(name)
+            if value is not None:
+                setattr(ob.mk8, "has_" + attribute, True)
+                setattr(ob.mk8, attribute, value)
+
         addon.log(2, "OBJ " + str(obj["ObjId"]))
         # Create an object representing the Obj (load the real model later on).
         ob_name = objflow.get_obj_label(self.context, obj["ObjId"])
@@ -224,35 +230,17 @@ class Importer:
         ob.mk8.speed = obj["Speed"]
         ob.mk8.no_col = obj.get("NoCol", False)
         ob.mk8.top_view = obj["TopView"]
+        # Relations
+        set_optional("Obj_Obj", "obj_obj")
         # Paths
-        value = obj.get("Obj_Path")
-        if value is not None:
-            ob.mk8.has_obj_path = True
-            ob.mk8.obj_path = value
-        value = obj.get("Obj_PathPoint")
-        if value is not None:
-            ob.mk8.has_obj_path_point = True
-            ob.mk8.obj_path_point = value
-        value = obj.get("Obj_ObjPath")
-        if value is not None:
-            ob.mk8.has_obj_enemy_path_1 = True
-            ob.mk8.obj_enemy_path_1 = value
-        value = obj.get("Obj_EnemyPath1")
-        if value is not None:
-            ob.mk8.has_obj_enemy_path_2 = True
-            ob.mk8.obj_enemy_path_2 = value
-        value = obj.get("Obj_EnemyPath2")
-        if value is not None:
-            ob.mk8.has_obj_path_point = True
-            ob.mk8.obj_path_point = value
-        value = obj.get("Obj_ItemPath1")
-        if value is not None:
-            ob.mk8.has_obj_item_path_1 = True
-            ob.mk8.obj_item_path_1 = value
-        value = obj.get("Obj_ItemPath2")
-        if value is not None:
-            ob.mk8.has_obj_item_path_2 = True
-            ob.mk8.obj_item_path_2 = value
+        set_optional("Obj_Path",       "obj_path")
+        set_optional("Obj_PathPoint",  "obj_path_point")
+        set_optional("Obj_ObjPath",    "obj_obj_path")
+        set_optional("Obj_ObjPoint",   "obj_obj_point")
+        set_optional("Obj_EnemyPath1", "obj_enemy_path_1")
+        set_optional("Obj_EnemyPath2", "obj_enemy_path_2")
+        set_optional("Obj_ItemPath1",  "obj_item_path_1")
+        set_optional("Obj_ItemPath2",  "obj_item_path_2")
         # Parameters
         for i, param in enumerate(obj["Params"]):
             setattr(ob.mk8, "float_param_" + str(i + 1), param)
