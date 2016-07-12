@@ -2,7 +2,7 @@ bl_info = {
     "name": "Mario Kart 8 Course Info format",
     "description": "Import-Export Mario Kart 8 Course info",
     "author": "Syroot",
-    "version": (0, 2, 1),
+    "version": (0, 2, 2),
     "blender": (2, 75, 0),
     "location": "File > Import-Export",
     "warning": "This add-on is under development.",
