@@ -226,36 +226,36 @@ class Importer:
         ob.mk8.top_view = obj["TopView"]
         # Paths
         value = obj.get("Obj_Path")
-        if value:
+        if value is not None:
             ob.mk8.has_obj_path = True
             ob.mk8.obj_path = value
-            value = obj.get("Obj_PathPoint")
-        if value:
+        value = obj.get("Obj_PathPoint")
+        if value is not None:
             ob.mk8.has_obj_path_point = True
             ob.mk8.obj_path_point = value
         value = obj.get("Obj_ObjPath")
-        if value:
+        if value is not None:
             ob.mk8.has_obj_enemy_path_1 = True
             ob.mk8.obj_enemy_path_1 = value
         value = obj.get("Obj_EnemyPath1")
-        if value:
+        if value is not None:
             ob.mk8.has_obj_enemy_path_2 = True
             ob.mk8.obj_enemy_path_2 = value
         value = obj.get("Obj_EnemyPath2")
-        if value:
+        if value is not None:
             ob.mk8.has_obj_path_point = True
             ob.mk8.obj_path_point = value
         value = obj.get("Obj_ItemPath1")
-        if value:
+        if value is not None:
             ob.mk8.has_obj_item_path_1 = True
             ob.mk8.obj_item_path_1 = value
         value = obj.get("Obj_ItemPath2")
-        if value:
+        if value is not None:
             ob.mk8.has_obj_item_path_2 = True
             ob.mk8.obj_item_path_2 = value
         # Parameters
         for i, param in enumerate(obj["Params"]):
-            setattr(ob.mk8, "int_param_" + str(i), param)
+            setattr(ob.mk8, "float_param_" + str(i + 1), param)
         # Transform
         ob.scale = Importer.vector_from_dict(obj["Scale"])
         ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"])

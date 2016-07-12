@@ -63,6 +63,8 @@ class Exporter:
             map_ids.append(obj.obj_id)
             map_res_names.extend(objflow.get_obj_res_names(self.context, obj.obj_id))
             objs.append(self.get_obj_node(ob))
+        # Sort descending by ObjID
+        objs.sort(key=lambda o: o["ObjId"], reverse=True)
         root["Obj"] = objs
         # Create the distinct MapObjIdList and MapObjResList contents.
         root["MapObjIdList"] = list(set(map_ids))
@@ -73,7 +75,7 @@ class Exporter:
         mk8 = ob.mk8
         # General
         obj = {
-            "UnitIdNum": 0, # Seems to work without any issues.
+            "UnitIdNum": mk8.unit_id_num, # 0 might seem to work without any issues.
             "ObjId": mk8.obj_id,
             "Multi2P": mk8.multi_2p,
             "Multi4P": mk8.multi_4p,
@@ -86,8 +88,8 @@ class Exporter:
         if mk8.no_col:
             obj["NoCol"] = True
         # Params
-        for i in range(0, 8):
-            obj["Params"].append(getattr(mk8, "int_param_" + str(i + 1)))
+        for i in range(1, 9):
+            obj["Params"].append(getattr(mk8, "float_param_" + str(i)))
         # Paths
         if mk8.has_obj_path_point:   obj["Obj_PathPoint"]  = mk8.obj_path_point
         if mk8.has_obj_path:         obj["Obj_Path"]       = mk8.obj_path

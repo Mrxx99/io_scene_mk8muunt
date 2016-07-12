@@ -106,16 +106,14 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ("EFFECTAREA", "Effect Area", "Handle this object as an effect area"),
         ("OBJ",        "Obj",         "Handle this object as a course object.")))
     unit_id_num   = IntProperty  (name="Unit ID", min=0)
-    int_param_1   = IntProperty  (name="Param 1")
-    int_param_2   = IntProperty  (name="Param 2")
-    int_param_3   = IntProperty  (name="Param 3")
-    int_param_4   = IntProperty  (name="Param 4")
-    int_param_5   = IntProperty  (name="Param 5")
-    int_param_6   = IntProperty  (name="Param 6")
-    int_param_7   = IntProperty  (name="Param 7")
-    int_param_8   = IntProperty  (name="Param 8")
     float_param_1 = FloatProperty(name="Param 1")
     float_param_2 = FloatProperty(name="Param 2")
+    float_param_3 = FloatProperty(name="Param 3")
+    float_param_4 = FloatProperty(name="Param 4")
+    float_param_5 = FloatProperty(name="Param 5")
+    float_param_6 = FloatProperty(name="Param 6")
+    float_param_7 = FloatProperty(name="Param 7")
+    float_param_8 = FloatProperty(name="Param 8")
 
     # ---- Area ----
 
@@ -298,17 +296,17 @@ class MK8PanelObject(bpy.types.Panel):
         box = self.layout.mk8_colbox(mk8, "params_expanded")
         if mk8.params_expanded:
             row = box.row()
-            row.prop(mk8, "int_param_1")
-            row.prop(mk8, "int_param_2")
+            row.prop(mk8, "float_param_1")
+            row.prop(mk8, "float_param_2")
             row = box.row()
-            row.prop(mk8, "int_param_3")
-            row.prop(mk8, "int_param_4")
+            row.prop(mk8, "float_param_3")
+            row.prop(mk8, "float_param_4")
             row = box.row()
-            row.prop(mk8, "int_param_5")
-            row.prop(mk8, "int_param_6")
+            row.prop(mk8, "float_param_5")
+            row.prop(mk8, "float_param_6")
             row = box.row()
-            row.prop(mk8, "int_param_7")
-            row.prop(mk8, "int_param_8")
+            row.prop(mk8, "float_param_7")
+            row.prop(mk8, "float_param_8")
         # Paths
         box = self.layout.mk8_colbox(mk8, "paths_expanded")
         if mk8.paths_expanded:

@@ -35,7 +35,7 @@ class File:
         names = []
         strings = []
         paths = []
-        self._generate_arrays(self.root, names, strings, paths)
+        self._prepare_export(self.root, names, strings, paths)
         names = list(set(names))
         strings = list(set(strings))
         names.sort()
@@ -179,18 +179,18 @@ class File:
 
     # ---- Write ----
 
-    def _generate_arrays(self, value, names, strings, paths):
+    def _prepare_export(self, value, names, strings, paths):
         if isinstance(value, str):
             strings.append(value)
         elif isinstance(value, Path):
             paths.append(value)
         elif isinstance(value, list):
-            for value in value:
-                self._generate_arrays(value, names, strings, paths)
+            for val in value:
+                self._prepare_export(val, names, strings, paths)
         elif isinstance(value, dict):
-            for key, value in value.items():
+            for key, val in sorted(value.items()): # Dictionaries need to be sorted.
                 names.append(key)
-                self._generate_arrays(value, names, strings, paths)
+                self._prepare_export(val, names, strings, paths)
 
     def _write_value(self, writer, value):
         # Only reserve and return an offset for the complex value contents, write simple or main values directly.
@@ -246,7 +246,7 @@ class File:
         self._write_type_and_length(writer, NodeType.Dictionary, len(value))
         # Write the key-value pairs.
         offsets = []
-        for key, val in value.items():
+        for key, val in sorted(value.items()): # Dictionaries need to be sorted.
             # Get the index of the key string in the file's name array and the type of the value.
             key_index = self._name_array.index(key)
             val_type = NodeType.get_type(val)
@@ -254,9 +254,9 @@ class File:
             # Write the elements.
             offsets.append(self._write_value(writer, val))
         # Write the value contents.
-        for offset, val in zip(offsets, value.values()):
+        for offset, val in zip(offsets, sorted(value.items())): # Dictionaries need to be sorted.
             if offset:
-                self._write_value_contents(writer, offset, val)
+                self._write_value_contents(writer, offset, val[1]) # Stupid solution to access value of now-tuples.
 
     def _write_string_array(self, writer, value):
         writer.align(4)
