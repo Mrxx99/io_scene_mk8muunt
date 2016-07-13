@@ -1,5 +1,7 @@
 import bpy
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, IntProperty
+from . import idproperty
+from .idproperty import ObjectIDProperty
 from . import addon
 from . import objflow
 
@@ -105,7 +107,6 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ("CLIPAREA",   "Clip Area",   "Handle this object as a clip area"),
         ("EFFECTAREA", "Effect Area", "Handle this object as an effect area"),
         ("OBJ",        "Obj",         "Handle this object as a course object.")))
-    index         = IntProperty  (name="Index",   description="The array index this object will have when exporting.",                  min=-1, default=-1)
     unit_id_num   = IntProperty  (name="Unit ID", description="Seems to have been an internal editor ID, but no longer has an effect.", min=0)
     float_param_1 = FloatProperty(name="Param 1")
     float_param_2 = FloatProperty(name="Param 2")
@@ -135,8 +136,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     area_pull_path = IntProperty(name="Pull Path", min=0)
     camera_areas   = CollectionProperty(type=MK8PropsObjectAreaCameraArea)
 
-    camera_areas_active = bpy.props.IntProperty(
-    )
+    camera_areas_active = IntProperty()
 
     # ---- Clip Area ----
 
@@ -174,28 +174,28 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     wifi     = BoolProperty (name="Exclude WiFi",    description="Removes this obj in online games.")
     wifi_2p  = BoolProperty (name="Exclude WiFi 2P", description="Removes this obj in 2 player online games.")
     no_col   = BoolProperty (name="No Collisions",   description="Removes collision detection with this object when set.")
-    top_view = BoolProperty (name="Top View")
+    top_view = BoolProperty (name="Top View",        description="Unknown setting, never used in the original courses.")
     # Relations
-    has_obj_obj = BoolProperty(name="Has Related Obj", description="Determines whether this Obj has relations to another.")
-    obj_obj     = IntProperty (name="Related Obj",     description="The index of the Obj this Obj has relations to.")
+    obj_idx = IntProperty(default=-1)
+    obj     = ObjectIDProperty(name="Related Obj", description="The Obj this Obj has relations to.")
     # Paths
-    speed                = FloatProperty(name="Speed",              description="The speed in which the obj follows its path.")
-    has_obj_path         = BoolProperty (name="Has Path",           description="Determines whether a Path will be used.")
-    has_obj_path_point   = BoolProperty (name="Has Path Point",     description="Determines whether a Path Point will be used.")
-    has_obj_obj_path     = BoolProperty (name="Has Obj Path",       description="Determines whether an Obj Path will be used.")
-    has_obj_obj_point    = BoolProperty (name="Has Obj Path Point", description="Determines whether an Obj Path Point will be used.")
-    has_obj_enemy_path_1 = BoolProperty (name="Has Enemy Path 1",   description="Determines whether an Enemy Path 1 will be used.")
-    has_obj_enemy_path_2 = BoolProperty (name="Has Enemy Path 2",   description="Determines whether an Enemy Path 2 will be used.")
-    has_obj_item_path_1  = BoolProperty (name="Has Item Path 1",    description="Determines whether an Item Path 1 will be used.")
-    has_obj_item_path_2  = BoolProperty (name="Has Item Path 2",    description="Determines whether an Item Path 2 will be used.")
-    obj_path             = IntProperty  (name="Path",               description="The index of the path this obj follows.", min=0)
-    obj_path_point       = IntProperty  (name="Path Point",         min=0)
-    obj_obj_path         = IntProperty  (name="Obj",                min=0)
-    obj_obj_point        = IntProperty  (name="Obj Point",          min=0)
-    obj_enemy_path_1     = IntProperty  (name="Enemy 1",            min=0)
-    obj_enemy_path_2     = IntProperty  (name="Enemy 2",            min=0)
-    obj_item_path_1      = IntProperty  (name="Item 1",             min=0)
-    obj_item_path_2      = IntProperty  (name="Item 2",             min=0)
+    speed            = FloatProperty(name="Speed",              description="The speed in which the obj follows its path.")
+    has_path         = BoolProperty (name="Has Path",           description="Determines whether a Path will be used.")
+    has_path_point   = BoolProperty (name="Has Path Point",     description="Determines whether a Path Point will be used.")
+    has_obj_path     = BoolProperty (name="Has Obj Path",       description="Determines whether an Obj Path will be used.")
+    has_obj_point    = BoolProperty (name="Has Obj Path Point", description="Determines whether an Obj Path Point will be used.")
+    has_enemy_path_1 = BoolProperty (name="Has Enemy Path 1",   description="Determines whether an Enemy Path 1 will be used.")
+    has_enemy_path_2 = BoolProperty (name="Has Enemy Path 2",   description="Determines whether an Enemy Path 2 will be used.")
+    has_item_path_1  = BoolProperty (name="Has Item Path 1",    description="Determines whether an Item Path 1 will be used.")
+    has_item_path_2  = BoolProperty (name="Has Item Path 2",    description="Determines whether an Item Path 2 will be used.")
+    path             = IntProperty  (name="Path",               description="The index of the path this obj follows.", min=0)
+    path_point       = IntProperty  (name="Path Point",         min=0)
+    obj_path         = IntProperty  (name="Obj",                min=0)
+    obj_point        = IntProperty  (name="Obj Point",          min=0)
+    enemy_path_1     = IntProperty  (name="Enemy 1",            min=0)
+    enemy_path_2     = IntProperty  (name="Enemy 2",            min=0)
+    item_path_1      = IntProperty  (name="Item 1",             min=0)
+    item_path_2      = IntProperty  (name="Item 2",             min=0)
     # UI
     obj_id_enum         = EnumProperty(items=obj_id_enum_items)
     params_expanded     = BoolProperty(name="Params",     description="Expand the Params section or collapse it.",     default=True)
@@ -236,9 +236,7 @@ class MK8PanelObject(bpy.types.Panel):
         self.layout.prop(mk8, "object_type")
         # Generic properties.
         if mk8.object_type != "NONE":
-            row = self.layout.row()
-            row.prop(mk8, "index")
-            row.prop(mk8, "unit_id_num")
+            self.layout.prop(mk8, "unit_id_num")
             # Type specific properties.
             self.layout.separator()
             if   mk8.object_type == "AREA":       self.draw_area(context, mk8)
@@ -285,23 +283,19 @@ class MK8PanelObject(bpy.types.Panel):
             return sub
 
         # Obj ID
-        split = self.layout.split(0.5)
-        col = split.column()
-        row = col.row(align=True)
-        row.operator("object.mk8muunt_obj_id_search", text="", icon="MESH_CUBE")
-        row.prop(mk8, "obj_id")
-        col = split.column()
+        row = self.layout.row(align=True)
         obj_name = objflow.get_obj_label(context, mk8.obj_id)
         if obj_name:
-            col.label(obj_name, icon="FORWARD")
+            row.label(obj_name)
         else:
-            col.label("Unknown", icon="ERROR")
+            row.label("Unknown", icon="ERROR")
+        row.prop(mk8, "obj_id")
+        row.operator("object.mk8muunt_obj_id_search", text="", icon="VIEWZOOM")
         # Relations
-        col = self.layout.column_flow(2)
-        row = col.row()
-        optional_prop(row, "obj_obj")
+        row = self.layout.row()
+        idproperty.layout_id_prop(row, mk8, "obj")
         # Other
-        row = col.row()
+        row = self.layout.row()
         row.prop(mk8, "no_col")
         row.prop(mk8, "top_view")
         # Obj Params
@@ -325,17 +319,17 @@ class MK8PanelObject(bpy.types.Panel):
             row = box.row()
             row.prop(mk8, "speed")
             row = box.row()
+            optional_prop(row, "path")
+            optional_prop(row, "path_point")
+            row = box.row()
             optional_prop(row, "obj_path")
-            optional_prop(row, "obj_path_point")
+            optional_prop(row, "obj_point")
             row = box.row()
-            optional_prop(row, "obj_obj_path")
-            optional_prop(row, "obj_obj_point")
+            optional_prop(row, "enemy_path_1")
+            optional_prop(row, "enemy_path_2")
             row = box.row()
-            optional_prop(row, "obj_enemy_path_1")
-            optional_prop(row, "obj_enemy_path_2")
-            row = box.row()
-            optional_prop(row, "obj_item_path_1")
-            optional_prop(row, "obj_item_path_2")
+            optional_prop(row, "item_path_1")
+            optional_prop(row, "item_path_2")
         # Exclusions
         box = self.layout.mk8_colbox(mk8, "exclusions_expanded")
         if mk8.exclusions_expanded:

@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Mario Kart 8 Course Info format",
     "description": "Import-Export Mario Kart 8 Course info",
-    "author": "Syroot",
-    "version": (0, 2, 3),
+    "author": "Syroot, IDProperty 1.2 by Andrew Moffat",
+    "version": (0, 2, 5),
     "blender": (2, 75, 0),
     "location": "File > Import-Export",
     "warning": "This add-on is under development.",
@@ -15,6 +15,7 @@ bl_info = {
 # Reload the package modules when reloading add-ons in Blender with F8.
 if "bpy" in locals():
     import importlib
+    if "idproperty" in locals(): importlib.reload(idproperty)
     if "addon"      in locals(): importlib.reload(addon)
     if "binary_io"  in locals(): importlib.reload(binary_io)
     if "byaml"      in locals(): importlib.reload(byaml)
@@ -24,6 +25,7 @@ if "bpy" in locals():
     if "exporting"  in locals(): importlib.reload(exporting)
 
 import bpy
+from . import idproperty
 from . import addon
 from . import importing
 from . import editing
@@ -33,6 +35,7 @@ from . import exporting
 
 def register():
     bpy.utils.register_module(__name__)
+    idproperty.register()
     # Addon
     bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
     # Importing
@@ -45,6 +48,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_module(__name__)
+    idproperty.unregister()
     # Addon
     del bpy.types.UILayout.mk8_colbox
     # Importing

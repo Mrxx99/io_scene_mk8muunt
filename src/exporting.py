@@ -52,27 +52,25 @@ class Exporter:
         return {"FINISHED"}
 
     def replace_objs(self, root):
-        # Get the Obj objects in Blender, sorted by index.
+        # Get the Obj objects in Blender.
         group = bpy.data.groups.get("Obj", None)
         obs = group.objects.values()
-        obs.sort(key=lambda o: o.mk8.index & 0xFFFFFFFF) # Put -1 to the end by simply converting it to unsigned.
-        # Create the Obj BYAML array.
+        # Add the Obj instances to the Obj array and remember ID and ResNames.
         objs = []
         map_ids = []
         map_res_names = []
         for ob in obs:
-            # Add the instance to the Obj list and remember ID and ResNames.
             obj = ob.mk8
             map_ids.append(obj.obj_id)
             map_res_names.extend(objflow.get_obj_res_names(self.context, obj.obj_id))
-            objs.append(self.get_obj_node(ob))
+            objs.append(self.get_obj_node(obs, ob))
         root["Obj"] = objs
         # Create the distinct MapObjIdList and MapObjResList contents.
         root["MapObjIdList"] = list(set(map_ids))
         root["MapObjIdList"].sort(reverse=True)
         root["MapObjResList"] = list(set(map_res_names))
 
-    def get_obj_node(self, ob):
+    def get_obj_node(self, obs, ob):
         mk8 = ob.mk8
         # General
         obj = {
@@ -92,16 +90,20 @@ class Exporter:
         for i in range(1, 9):
             obj["Params"].append(getattr(mk8, "float_param_" + str(i)))
         # Relations
-        if mk8.has_obj_obj:          obj["Obj_Obj"]        = mk8.obj_obj
+        if mk8.obj:
+            for i, related_ob in enumerate(obs):
+                if mk8.obj == related_ob.name:
+                    obj["Obj_Obj"] = i
+                    break
         # Paths
-        if mk8.has_obj_path:         obj["Obj_Path"]       = mk8.obj_path
-        if mk8.has_obj_path_point:   obj["Obj_PathPoint"]  = mk8.obj_path_point
-        if mk8.has_obj_obj_path:     obj["Obj_ObjPath"]    = mk8.obj_obj_path
-        if mk8.has_obj_obj_point:    obj["Obj_ObjPoint"]   = mk8.obj_obj_point
-        if mk8.has_obj_enemy_path_1: obj["Obj_EnemyPath1"] = mk8.obj_enemy_path_1
-        if mk8.has_obj_enemy_path_2: obj["Obj_EnemyPath2"] = mk8.obj_enemy_path_2
-        if mk8.has_obj_item_path_1:  obj["Obj_ItemPath1"]  = mk8.obj_item_path_1
-        if mk8.has_obj_item_path_2:  obj["Obj_ItemPath2"]  = mk8.obj_item_path_2
+        if mk8.has_path:         obj["Obj_Path"]       = mk8.path
+        if mk8.has_path_point:   obj["Obj_PathPoint"]  = mk8.path_point
+        if mk8.has_obj_path:     obj["Obj_ObjPath"]    = mk8.obj_path
+        if mk8.has_obj_point:    obj["Obj_ObjPoint"]   = mk8.obj_obj_point
+        if mk8.has_enemy_path_1: obj["Obj_EnemyPath1"] = mk8.enemy_path_1
+        if mk8.has_enemy_path_2: obj["Obj_EnemyPath2"] = mk8.enemy_path_2
+        if mk8.has_item_path_1:  obj["Obj_ItemPath1"]  = mk8.item_path_1
+        if mk8.has_item_path_2:  obj["Obj_ItemPath2"]  = mk8.item_path_2
         # Exclusions
         obj["Multi2P"] = mk8.multi_2p
         obj["Multi4P"] = mk8.multi_4p
