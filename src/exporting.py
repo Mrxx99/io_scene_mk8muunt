@@ -52,19 +52,20 @@ class Exporter:
         return {"FINISHED"}
 
     def replace_objs(self, root):
-        # Create the Obj array.
+        # Get the Obj objects in Blender, sorted by index.
+        group = bpy.data.groups.get("Obj", None)
+        obs = group.objects.values()
+        obs.sort(key=lambda o: o.mk8.index & 0xFFFFFFFF) # Put -1 to the end by simply converting it to unsigned.
+        # Create the Obj BYAML array.
         objs = []
         map_ids = []
         map_res_names = []
-        group = bpy.data.groups.get("Obj", None)
-        for ob in group.objects:
+        for ob in obs:
             # Add the instance to the Obj list and remember ID and ResNames.
             obj = ob.mk8
             map_ids.append(obj.obj_id)
             map_res_names.extend(objflow.get_obj_res_names(self.context, obj.obj_id))
             objs.append(self.get_obj_node(ob))
-        # Sort descending by ObjID
-        objs.sort(key=lambda o: o["ObjId"], reverse=True)
         root["Obj"] = objs
         # Create the distinct MapObjIdList and MapObjResList contents.
         root["MapObjIdList"] = list(set(map_ids))

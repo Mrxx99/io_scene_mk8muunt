@@ -105,7 +105,8 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ("CLIPAREA",   "Clip Area",   "Handle this object as a clip area"),
         ("EFFECTAREA", "Effect Area", "Handle this object as an effect area"),
         ("OBJ",        "Obj",         "Handle this object as a course object.")))
-    unit_id_num   = IntProperty  (name="Unit ID", min=0)
+    index         = IntProperty  (name="Index",   description="The array index this object will have when exporting.",                  min=-1, default=-1)
+    unit_id_num   = IntProperty  (name="Unit ID", description="Seems to have been an internal editor ID, but no longer has an effect.", min=0)
     float_param_1 = FloatProperty(name="Param 1")
     float_param_2 = FloatProperty(name="Param 2")
     float_param_3 = FloatProperty(name="Param 3")
@@ -144,7 +145,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ob.draw_type = "WIRE"
 
     clip_area_shape = EnumProperty(name="Shape", description="Specifies the outer form of the region this clip area spans.", update=update, items=(
-        ("AREACUBE", "Cube", "The clip area spans a cuboid region."),))
+        ("AREACUBE", "Cube",        "The clip area spans a cuboid region."),))
     clip_area_type  = EnumProperty(name="Type",  items=(
         ("UNKNOWN5", "Unknown (5)", "Unknown clip area type. Appears almost everywhere."),))
 
@@ -176,7 +177,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     top_view = BoolProperty (name="Top View")
     # Relations
     has_obj_obj = BoolProperty(name="Has Related Obj", description="Determines whether this Obj has relations to another.")
-    obj_obj     = IntProperty (name="Related Obj",     description="The Obj this Obj has relations to.")
+    obj_obj     = IntProperty (name="Related Obj",     description="The index of the Obj this Obj has relations to.")
     # Paths
     speed                = FloatProperty(name="Speed",              description="The speed in which the obj follows its path.")
     has_obj_path         = BoolProperty (name="Has Path",           description="Determines whether a Path will be used.")
@@ -187,7 +188,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     has_obj_enemy_path_2 = BoolProperty (name="Has Enemy Path 2",   description="Determines whether an Enemy Path 2 will be used.")
     has_obj_item_path_1  = BoolProperty (name="Has Item Path 1",    description="Determines whether an Item Path 1 will be used.")
     has_obj_item_path_2  = BoolProperty (name="Has Item Path 2",    description="Determines whether an Item Path 2 will be used.")
-    obj_path             = IntProperty  (name="Path",               description="The number of the path this obj follows.", min=0)
+    obj_path             = IntProperty  (name="Path",               description="The index of the path this obj follows.", min=0)
     obj_path_point       = IntProperty  (name="Path Point",         min=0)
     obj_obj_path         = IntProperty  (name="Obj",                min=0)
     obj_obj_point        = IntProperty  (name="Obj Point",          min=0)
@@ -235,13 +236,15 @@ class MK8PanelObject(bpy.types.Panel):
         self.layout.prop(mk8, "object_type")
         # Generic properties.
         if mk8.object_type != "NONE":
-            self.layout.prop(mk8, "unit_id_num")
-        # Type specific properties.
-        self.layout.separator()
-        if   mk8.object_type == "AREA":       self.draw_area(context, mk8)
-        elif mk8.object_type == "CLIPAREA":   self.draw_clip_area(context, mk8)
-        elif mk8.object_type == "EFFECTAREA": self.draw_effect_area(context, mk8)
-        elif mk8.object_type == "OBJ":        self.draw_obj(context, mk8)
+            row = self.layout.row()
+            row.prop(mk8, "index")
+            row.prop(mk8, "unit_id_num")
+            # Type specific properties.
+            self.layout.separator()
+            if   mk8.object_type == "AREA":       self.draw_area(context, mk8)
+            elif mk8.object_type == "CLIPAREA":   self.draw_clip_area(context, mk8)
+            elif mk8.object_type == "EFFECTAREA": self.draw_effect_area(context, mk8)
+            elif mk8.object_type == "OBJ":        self.draw_obj(context, mk8)
 
     def draw_area(self, context, mk8):
         row = self.layout.row(align=True)
@@ -290,16 +293,17 @@ class MK8PanelObject(bpy.types.Panel):
         col = split.column()
         obj_name = objflow.get_obj_label(context, mk8.obj_id)
         if obj_name:
-            col.label(obj_name, icon="FILE_TICK")
+            col.label(obj_name, icon="FORWARD")
         else:
             col.label("Unknown", icon="ERROR")
+        # Relations
+        col = self.layout.column_flow(2)
+        row = col.row()
+        optional_prop(row, "obj_obj")
         # Other
-        row = self.layout.row()
+        row = col.row()
         row.prop(mk8, "no_col")
         row.prop(mk8, "top_view")
-        # Relations
-        row = self.layout.row()
-        optional_prop(row, "obj_obj")
         # Obj Params
         box = self.layout.mk8_colbox(mk8, "params_expanded")
         if mk8.params_expanded:

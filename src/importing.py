@@ -104,8 +104,9 @@ class Importer:
         areas = root.get("Area")
         if areas:
             addon.log(1, "AREA[" + str(len(areas)) + "]")
-            for area in areas:
-                self._convert_area(area)
+            for i, area in enumerate(areas):
+                ob = self._convert_area(area)
+                ob.mk8.index = i
 
     def _convert_area(self, area):
         addon.log(2, "AREA")
@@ -135,6 +136,7 @@ class Importer:
         # Group and link.
         self._add_to_group(ob, "Area")
         bpy.context.scene.objects.link(ob)
+        return ob
 
     # ---- Clip Area ----
 
@@ -142,8 +144,9 @@ class Importer:
         clip_areas = root.get("ClipArea")
         if clip_areas:
             addon.log(1, "CLIPAREA[" + str(len(clip_areas)) + "]")
-            for clip_area in clip_areas:
-                self._convert_clip_area(clip_area)
+            for i, clip_area in enumerate(clip_areas):
+                ob = self._convert_clip_area(clip_area)
+                ob.mk8.index = i
 
     def _convert_clip_area(self, clip_area):
         addon.log(2, "CLIPAREA")
@@ -168,6 +171,7 @@ class Importer:
         # Group and link.
         self._add_to_group(ob, "ClipArea")
         bpy.context.scene.objects.link(ob)
+        return ob
 
     # ---- Effect Area ----
 
@@ -175,8 +179,9 @@ class Importer:
         effect_areas = root.get("EffectArea")
         if effect_areas:
             addon.log(1, "EFFECTAREA[" + str(len(effect_areas)) + "]")
-            for effect_area in effect_areas:
-                self._convert_effect_area(effect_area)
+            for i, effect_area in enumerate(effect_areas):
+                ob = self._convert_effect_area(effect_area)
+                ob.mk8.index = ob
 
     def _convert_effect_area(self, effect_area):
         addon.log(2, "EFFECTAREA")
@@ -197,6 +202,7 @@ class Importer:
         # Group and link.
         self._add_to_group(ob, "EffectArea")
         bpy.context.scene.objects.link(ob)
+        return ob
 
     # ---- Obj ----
 
@@ -204,8 +210,9 @@ class Importer:
         objs = root.get("Obj")
         if objs:
             addon.log(1, "OBJ[" + str(len(objs)) + "]")
-            for obj in objs:
-                self._convert_obj(obj)
+            for i, obj in enumerate(objs):
+                ob = self._convert_obj(obj)
+                ob.mk8.index = i
 
     def _convert_obj(self, obj):
         def set_optional(name, attribute):
@@ -251,6 +258,7 @@ class Importer:
         # Group and link.
         self._add_to_group(ob, "Obj")
         bpy.context.scene.objects.link(ob)
+        return ob
 
     @staticmethod
     def vector_from_dict(dictionary):
