@@ -40,15 +40,15 @@ class MK8PropsScene(bpy.types.PropertyGroup):
 
     effect_sw      = IntProperty (name="EffectSW")
     head_light     = EnumProperty(name="Headlights", description="Controls how headlights are turned on and off throughout the course.", items=(
-        ("OFF",     "Always Off",  "Headlights are turned off, ignoring any lap path specific settings."),
-        ("ON",      "Always On",   "Headlights are turned on, ignoring any lap path specific settings."),
-        ("PARTIAL", "By Lap Path", "Headlights are controlled by the lap path.")))
+        ("0", "Always Off",  "Headlights are turned off, ignoring any lap path specific settings."),
+        ("1", "Always On",   "Headlights are turned on, ignoring any lap path specific settings."),
+        ("2", "By Lap Path", "Headlights are controlled by the lap path.")))
     is_first_left  = BoolProperty(name="First Curve Left", description="Optimizes game behavior if the first curve after the start turns left.")
     is_jugem_above = BoolProperty(name="Lakitu Above")
     jugem_above    = IntProperty (name="Lakitu Above")
     lap_jugem_pos  = IntProperty (name="Lap Lakitu Pos.")
-    lap_number     = IntProperty (name="Lap Number",       description="The number of total laps which have to be driven to finish this track.", min=0, max=7, default=3)
-    pattern_num    = IntProperty (name="Pattern Num.")
+    lap_number     = IntProperty (name="Lap Number",       description="The amount of total laps which have to be driven to finish this track.", min=0, max=7, default=3)
+    pattern_num    = IntProperty (name="Pattern Count",    description="The amount of random object sets of which one is picked at the race start.", min=0)
 
     obj_prm_1   = IntProperty(name="Param 1")
     obj_prm_2   = IntProperty(name="Param 2")
@@ -147,14 +147,14 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ob.draw_type = "WIRE"
 
     area_shape = EnumProperty(name="Shape", description="Specifies the outer form of the region this area spans.", update=update, items=(
-        ("AREACUBE",   "Cube",   "The area spans a cuboid region."),
-        ("AREASPHERE", "Sphere", "The area spans a spherical region.")))
+        ("0", "Cube",   "The area spans a cuboid region."),
+        ("1", "Sphere", "The area spans a spherical region.")))
     area_type  = EnumProperty(name="Type",  description="Specifies the action taken for objects inside of this region.", items=(
-        ("NONE",     "None",        "No special action will be taken."),
-        ("UNKNOWN1", "Unknown (1)", "Unknown area type. Appears in Mario Circuit and Twisted Mansion."),
-        ("UNKNOWN2", "Unknown (2)", "Unknown area type. Appears almost everywhere."),
-        ("PULL",     "Pull",        "Objects are moved along the specified path."),
-        ("UNKNOWN4", "Unknown (4)", "Unknown area type. Appears in Mario Kart Stadium, Royal Raceway and Animal Crossing.")))
+        ("0", "None",        "No special action will be taken."),
+        ("1", "Unknown (1)", "Unknown area type. Appears in Mario Circuit and Twisted Mansion."),
+        ("2", "Unknown (2)", "Unknown area type. Appears almost everywhere."),
+        ("3", "Pull",        "Objects are moved along the specified path."),
+        ("4", "Unknown (4)", "Unknown area type. Appears in Mario Kart Stadium, Royal Raceway and Animal Crossing.")))
     area_path      = IntProperty(name="Path",      min=0)
     area_pull_path = IntProperty(name="Pull Path", min=0)
     camera_areas   = CollectionProperty(type=MK8PropsObjectAreaCameraArea)
@@ -169,9 +169,9 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ob.draw_type = "WIRE"
 
     clip_area_shape = EnumProperty(name="Shape", description="Specifies the outer form of the region this clip area spans.", update=update, items=(
-        ("AREACUBE", "Cube",        "The clip area spans a cuboid region."),))
+        ("0", "Cube",        "The clip area spans a cuboid region."),))
     clip_area_type  = EnumProperty(name="Type",  items=(
-        ("UNKNOWN5", "Unknown (5)", "Unknown clip area type. Appears almost everywhere."),))
+        ("5", "Unknown (5)", "Unknown clip area type. Appears almost everywhere."),))
 
     # ---- Effect Area ----
 
@@ -202,19 +202,19 @@ class MK8PropsObject(bpy.types.PropertyGroup):
 
     # General
     obj_id   = IntProperty  (name="Obj ID",          description="The ID determining the type of this object (as defined in objflow.byaml).", default=1013, min=1000, max=9999, update=update)
-    multi_2p = BoolProperty (name="Exclude 2P",      description="Removes this obj in 2 player offline games.")
-    multi_4p = BoolProperty (name="Exclude 4P",      description="Removes this obj in 4 player offline games.")
-    wifi     = BoolProperty (name="Exclude WiFi",    description="Removes this obj in online games.")
-    wifi_2p  = BoolProperty (name="Exclude WiFi 2P", description="Removes this obj in 2 player online games.")
     no_col   = BoolProperty (name="No Collisions",   description="Removes collision detection with this object when set.")
     top_view = BoolProperty (name="Top View",        description="Unknown setting, never used in the original courses.")
     # Relations
-    obj_idx = IntProperty(default=-1)
-    obj     = ObjectIDProperty(name="Related Obj", description="The Obj this Obj has relations to.")
+    obj_idx      = IntProperty     (default=-1)
+    obj          = ObjectIDProperty(name="Obj", description="The Obj this Obj has relations to.")
+    has_area_obj = BoolProperty    (name="Has Area Obj")
+    area_obj     = IntProperty     (name="Area Obj")
     # Paths
     speed            = FloatProperty(name="Speed",              description="The speed in which the obj follows its path.")
     has_path         = BoolProperty (name="Has Path",           description="Determines whether a Path will be used.")
     has_path_point   = BoolProperty (name="Has Path Point",     description="Determines whether a Path Point will be used.")
+    has_lap_path     = BoolProperty (name="Has Lap Point",      description="Determines whether a Lap Path will be used.")
+    has_lap_point    = BoolProperty (name="Has Lap Path Point", description="Determines whether a Lap Path Point will be used.")
     has_obj_path     = BoolProperty (name="Has Obj Path",       description="Determines whether an Obj Path will be used.")
     has_obj_point    = BoolProperty (name="Has Obj Path Point", description="Determines whether an Obj Path Point will be used.")
     has_enemy_path_1 = BoolProperty (name="Has Enemy Path 1",   description="Determines whether an Enemy Path 1 will be used.")
@@ -223,17 +223,26 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     has_item_path_2  = BoolProperty (name="Has Item Path 2",    description="Determines whether an Item Path 2 will be used.")
     path             = IntProperty  (name="Path",               description="The index of the path this obj follows.", min=0)
     path_point       = IntProperty  (name="Path Point",         min=0)
+    lap_path         = IntProperty  (name="Lap",                min=0)
+    lap_point        = IntProperty  (name="Lap Point",          min=0)
     obj_path         = IntProperty  (name="Obj",                min=0)
     obj_point        = IntProperty  (name="Obj Point",          min=0)
     enemy_path_1     = IntProperty  (name="Enemy 1",            min=0)
     enemy_path_2     = IntProperty  (name="Enemy 2",            min=0)
     item_path_1      = IntProperty  (name="Item 1",             min=0)
     item_path_2      = IntProperty  (name="Item 2",             min=0)
+    # Exclusions
+    single   = BoolProperty (name="Exclude Single",  description="Removes this Obj in 1 player offline games.")
+    multi_2p = BoolProperty (name="Exclude 2P",      description="Removes this Obj in 2 player offline games.")
+    multi_4p = BoolProperty (name="Exclude 4P",      description="Removes this Obj in 4 player offline games.")
+    wifi     = BoolProperty (name="Exclude WiFi",    description="Removes this Obj in 1 player online games.")
+    wifi_2p  = BoolProperty (name="Exclude WiFi 2P", description="Removes this Obj in 2 player online games.")
     # UI
     obj_id_enum         = EnumProperty(items=obj_id_enum_items)
     params_expanded     = BoolProperty(name="Params",     description="Expand the Params section or collapse it.",     default=True)
     paths_expanded      = BoolProperty(name="Paths",      description="Expand the Paths section or collapse it.",      default=True)
-    exclusions_expanded = BoolProperty(name="Exclusions", description="Expand the Exclusions section or collapse it.", default=False)
+    relations_expanded  = BoolProperty(name="Relations",  description="Expand the Relations section or collapse it.",  default=True)
+    exclusions_expanded = BoolProperty(name="Exclusions", description="Expand the Exclusions section or collapse it.", default=True)
 
 # ---- Operators ----
 
@@ -276,7 +285,7 @@ class MK8PanelObject(bpy.types.Panel):
         # Generic properties.
         row = self.layout.row()
         row.label("Type: " + mk8.object_type)
-        row.label("ID: " + str(mk8.unit_id_num))
+        row.label("Unit ID: " + str(mk8.unit_id_num))
         # Type specific properties.
         if   mk8.object_type == "AREA":       self.draw_area(context, mk8)
         elif mk8.object_type == "CLIPAREA":   self.draw_clip_area(context, mk8)
@@ -321,23 +330,17 @@ class MK8PanelObject(bpy.types.Panel):
             sub.prop(mk8, path)
             return sub
 
-        # Obj ID
+        # General
         row = self.layout.row(align=True)
         obj_name = objflow.get_obj_label(context, mk8.obj_id)
-        if obj_name:
-            row.label(obj_name)
-        else:
-            row.label("Unknown", icon="ERROR")
-        row.prop(mk8, "obj_id")
+        row.prop(mk8, "obj_id", text=obj_name if obj_name else "Unknown")
+        if not obj_name:
+            row.operator("object.mk8muunt_obj_id_search", text="", icon="ERROR")
         row.operator("object.mk8muunt_obj_id_search", text="", icon="VIEWZOOM")
-        # Relations
-        row = self.layout.row()
-        idproperty.layout_id_prop(row, mk8, "obj")
-        # Other
         row = self.layout.row()
         row.prop(mk8, "no_col")
         row.prop(mk8, "top_view")
-        # Obj Params
+        # Params
         box = self.layout.mk8_colbox(mk8, "params_expanded")
         if mk8.params_expanded:
             row = box.row()
@@ -361,6 +364,9 @@ class MK8PanelObject(bpy.types.Panel):
             optional_prop(row, "path")
             optional_prop(row, "path_point")
             row = box.row()
+            optional_prop(row, "lap_path")
+            optional_prop(row, "lap_point")
+            row = box.row()
             optional_prop(row, "obj_path")
             optional_prop(row, "obj_point")
             row = box.row()
@@ -369,9 +375,16 @@ class MK8PanelObject(bpy.types.Panel):
             row = box.row()
             optional_prop(row, "item_path_1")
             optional_prop(row, "item_path_2")
+        # Relations
+        box = self.layout.mk8_colbox(mk8, "relations_expanded")
+        if mk8.relations_expanded:
+            idproperty.layout_id_prop(box.row(), mk8, "obj")
+            optional_prop(box.row(), "area_obj")
         # Exclusions
         box = self.layout.mk8_colbox(mk8, "exclusions_expanded")
         if mk8.exclusions_expanded:
+            row = box.row(align=True)
+            row.prop(mk8, "single")
             row = box.row(align=True)
             row.prop(mk8, "multi_2p")
             row.prop(mk8, "multi_4p")

@@ -1,50 +1,25 @@
 import bpy
 import bpy_extras
-import mathutils
 import os
+from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, IntProperty, StringProperty
 from . import byaml
 from . import addon
-from . import objflow
-from . import editing
 
 class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     """Load a MK8 Course Info file"""
-    bl_idname = "import_scene.mk8muunt"
-    bl_label = "Import MK8 Course Info"
+    bl_idname  = "import_scene.mk8muunt"
+    bl_label   = "Import MK8 Course Info"
     bl_options = {"UNDO"}
 
     filename_ext = ".byaml"
-    filter_glob = bpy.props.StringProperty(
-        default="*.byaml",
-        options={"HIDDEN"}
-    )
-    filepath = bpy.props.StringProperty(
-        name="File Path",
-        description="Filepath used for importing the course BYAML file.",
-        maxlen=1024,
-        default=""
-    )
+    filter_glob  = StringProperty(default="*.byaml", options={"HIDDEN"})
+    filepath     = StringProperty(name="File Path", description="Filepath used for importing the course BYAML file.", maxlen=1024, default="")
 
-    import_area = bpy.props.BoolProperty(
-        name="Import Areas",
-        description="Imports Area instances.",
-        default=False
-    )
-    import_clip_area = bpy.props.BoolProperty(
-        name="Import Clip Areas",
-        description="Imports Clip Area instances.",
-        default=False
-    )
-    import_effect_area = bpy.props.BoolProperty(
-        name="Import Effect Area",
-        description="Imports Effect Area instances.",
-        default=False
-    )
-    import_obj = bpy.props.BoolProperty(
-        name="Import Objs",
-        description="Imports Obj instances which represent animated or interactive objects on the course.",
-        default=True
-    )
+    import_info        = BoolProperty(name="Import Info",        description="Import general course info like the number of laps.",                                  default=True)
+    import_area        = BoolProperty(name="Import Areas",       description="Imports Area instances.",                                                              default=False)
+    import_clip_area   = BoolProperty(name="Import Clip Areas",  description="Imports Clip Area instances.",                                                         default=False)
+    import_effect_area = BoolProperty(name="Import Effect Area", description="Imports Effect Area instances.",                                                       default=False)
+    import_obj         = BoolProperty(name="Import Objs",        description="Imports Obj instances which represent animated or interactive objects on the course.", default=True)
 
     @staticmethod
     def menu_func(self, context):
@@ -71,25 +46,29 @@ class Importer:
         return {"FINISHED"}
 
     def _convert(self, root):
-        # Convert the root properties.
+        # Convert the root properties. TODO: Convert all sub node types.
         addon.log(0, "BYAML " + self.filename)
-        scn = self.context.scene
-        scn.mk8.scene_type = "COURSE"
-        scn.mk8.effect_sw = root.get("EffectSW", 0)
-        scn.mk8.head_light = editing.MK8PropsScene.head_light[1]["items"][root.get("HeadLight", 0)][0]
-        scn.mk8.is_first_left = root.get("IsFirstLeft", False)
-        scn.mk8.is_jugem_above = root.get("IsJugemAbove", False)
-        scn.mk8.jugem_above = root.get("JugemAbove", 0)
-        scn.mk8.lap_jugem_pos = root.get("LapJugemPos", 0)
-        scn.mk8.lap_number = root.get("LapNumber", 0)
-        for i in range(1, 9):
-            setattr(scn.mk8, "obj_prm_" + str(i), root.get("OBJPrm" + str(i), 0))
-        scn.mk8.pattern_num = root.get("PatternNum", 0)
-        # TODO: Convert all sub node types.
+        if self.operator.import_info:        self._convert_info(root)
         if self.operator.import_area:        self._convert_areas(root)
         if self.operator.import_clip_area:   self._convert_clip_areas(root)
         if self.operator.import_effect_area: self._convert_effect_areas(root)
         if self.operator.import_obj:         self._convert_objs(root)
+
+    # ---- Info ----
+
+    def _convert_info(self, root):
+        mk8 = self.context.scene.mk8
+        mk8.scene_type = "COURSE"
+        mk8.effect_sw = root.get("EffectSW", 0)
+        mk8.head_light = str(root.get("HeadLight", 0))
+        mk8.is_first_left = root.get("IsFirstLeft", False)
+        mk8.is_jugem_above = root.get("IsJugemAbove", False)
+        mk8.jugem_above = root.get("JugemAbove", 0)
+        mk8.lap_jugem_pos = root.get("LapJugemPos", 0)
+        mk8.lap_number = root.get("LapNumber", 0)
+        for i in range(1, 9):
+            setattr(mk8, "obj_prm_" + str(i), root.get("OBJPrm" + str(i), 0))
+        mk8.pattern_num = root.get("PatternNum", 0)
 
     # ---- Area ----
 
@@ -104,7 +83,7 @@ class Importer:
     def _convert_area(self, area):
         addon.log(2, "AREA")
         # Create a wireframe object with a mesh representing the Area.
-        area_shape = editing.MK8PropsObject.area_shape[1]["items"][area["AreaShape"]][0]
+        area_shape = str(area["AreaShape"])
         mesh = addon.get_default_mesh(area_shape)
         ob = bpy.data.objects.new("Area", mesh)
         ob.draw_type = "WIRE"
@@ -114,7 +93,7 @@ class Importer:
         ob.mk8.float_param_1 = area["prm1"]
         ob.mk8.float_param_2 = area["prm2"]
         ob.mk8.area_shape = area_shape
-        ob.mk8.area_type = editing.MK8PropsObject.area_type[1]["items"][area["AreaType"]][0]
+        ob.mk8.area_type = str(area["AreaType"])
         ob.mk8.area_path = area.get("Area_Path", 0)
         ob.mk8.area_pull_path = area.get("Area_PullPath", 0)
         # Camera Areas
@@ -145,7 +124,7 @@ class Importer:
     def _convert_clip_area(self, clip_area):
         addon.log(2, "CLIPAREA")
         # Create a wireframe object with a mesh representing the Clip Area.
-        clip_area_shape = editing.MK8PropsObject.clip_area_shape[1]["items"][clip_area["AreaShape"]][0]
+        clip_area_shape = str(clip_area["AreaShape"])
         mesh = addon.get_default_mesh(clip_area_shape)
         ob = bpy.data.objects.new("ClipArea", mesh)
         ob.draw_type = "WIRE"
@@ -155,9 +134,7 @@ class Importer:
         ob.mk8.float_param_1 = clip_area["prm1"]
         ob.mk8.float_param_2 = clip_area["prm2"]
         ob.mk8.area_shape = clip_area_shape
-        clip_area_type = clip_area["AreaType"]
-        if    clip_area_type == 5: ob.mk8.clip_area_type = "UNKNOWN5"
-        else: raise AssertionError("Unknown clip area type.")
+        ob.mk8.clip_area_type = str(clip_area["AreaType"])
         # Transform
         ob.location = Importer.vector_from_dict(clip_area["Translate"], invert_z=True)
         ob.rotation_mode = "XZY"
@@ -234,18 +211,17 @@ class Importer:
         # General
         mk8.unit_id_num = obj["UnitIdNum"]
         mk8.obj_id = obj["ObjId"]
-        mk8.multi_2p = obj["Multi2P"]
-        mk8.multi_4p = obj["Multi4P"]
-        mk8.wifi = obj["WiFi"]
-        mk8.wifi_2p = obj["WiFi2P"]
         mk8.speed = obj["Speed"]
         mk8.no_col = obj.get("NoCol", False)
         mk8.top_view = obj["TopView"]
         # Relations
         set_optional_idx("Obj_Obj", "obj")
+        set_optional("Area_Obj", "area_obj")
         # Paths
         set_optional("Obj_Path",       "path")
         set_optional("Obj_PathPoint",  "path_point")
+        set_optional("Obj_LapPath",    "lap_path")
+        set_optional("Obj_LapPoint",   "lap_point")
         set_optional("Obj_ObjPath",    "obj_path")
         set_optional("Obj_ObjPoint",   "obj_point")
         set_optional("Obj_EnemyPath1", "enemy_path_1")
@@ -255,6 +231,12 @@ class Importer:
         # Parameters
         for i, param in enumerate(obj["Params"]):
             setattr(mk8, "float_param_" + str(i + 1), param)
+        # Exclusions
+        mk8.single = obj.get("Single", False)
+        mk8.multi_2p = obj["Multi2P"]
+        mk8.multi_4p = obj["Multi4P"]
+        mk8.wifi = obj["WiFi"]
+        mk8.wifi_2p = obj["WiFi2P"]
         # Transform
         ob.location = Importer.vector_from_dict(obj["Translate"], invert_z=True)
         ob.rotation_mode = "XZY"
