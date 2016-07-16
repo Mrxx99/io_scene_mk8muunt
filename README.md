@@ -13,6 +13,9 @@ It is currently in the alpha stage and supports the following features:
 Installation
 ============
 
+You require a full dump of the Mario Kart 8 game files.
+
+- Install <a href="https://github.com/Syroot/io_scene_bfres">io_scene_bfres</a> first, as the addon will be used to load Obj models which appear on the track.
 - Go to your Blender installation directory inside the version folder, and then to `scripts` > `addons`.
 - Create a new folder called "io_scene_mk8muunt".
 - Copy in all `*.py` files from the `src` folder of this repository.
