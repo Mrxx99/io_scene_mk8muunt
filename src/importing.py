@@ -15,7 +15,7 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
     filename_ext = ".byaml"
     filter_glob = bpy.props.StringProperty(
-        default="*_muunt*.byaml",
+        default="*.byaml",
         options={"HIDDEN"}
     )
     filepath = bpy.props.StringProperty(
@@ -48,7 +48,7 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
     @staticmethod
     def menu_func(self, context):
-        self.layout.operator(ImportOperator.bl_idname, text="MK8 Course Info (muunt.byaml)")
+        self.layout.operator(ImportOperator.bl_idname, text="MK8 Course Info (.byaml)")
 
     def execute(self, context):
         importer = Importer(self, context, self.properties.filepath)
@@ -91,13 +91,6 @@ class Importer:
         if self.operator.import_effect_area: self._convert_effect_areas(root)
         if self.operator.import_obj:         self._convert_objs(root)
 
-    def _add_to_group(self, ob, group_name):
-        # Get or create the required group.
-        group = bpy.data.groups.get(group_name, bpy.data.groups.new(group_name))
-        # Link the provided object to it.
-        if ob.name not in group.objects:
-            group.objects.link(ob)
-
     # ---- Area ----
 
     def _convert_areas(self, root):
@@ -130,11 +123,12 @@ class Importer:
             for i in range(0, len(camera_areas)):
                 ob.mk8.camera_areas.add().value = camera_areas[i]
         # Transform
+        ob.location = Importer.vector_from_dict(area["Translate"], invert_z=True)
+        ob.rotation_mode = "XZY"
+        ob.rotation_euler = Importer.vector_from_dict(area["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(area["Scale"])
-        ob.rotation_euler = Importer.vector_from_dict(area["Rotate"])
-        ob.location = Importer.vector_from_dict(area["Translate"])
         # Group and link.
-        self._add_to_group(ob, "Area")
+        addon.add_object_to_group(ob, "Area")
         bpy.context.scene.objects.link(ob)
         return ob
 
@@ -165,11 +159,12 @@ class Importer:
         if    clip_area_type == 5: ob.mk8.clip_area_type = "UNKNOWN5"
         else: raise AssertionError("Unknown clip area type.")
         # Transform
+        ob.location = Importer.vector_from_dict(clip_area["Translate"], invert_z=True)
+        ob.rotation_mode = "XZY"
+        ob.rotation_euler = Importer.vector_from_dict(clip_area["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(clip_area["Scale"])
-        ob.rotation_euler = Importer.vector_from_dict(clip_area["Rotate"])
-        ob.location = Importer.vector_from_dict(clip_area["Translate"])
         # Group and link.
-        self._add_to_group(ob, "ClipArea")
+        addon.add_object_to_group(ob, "ClipArea")
         bpy.context.scene.objects.link(ob)
         return ob
 
@@ -196,11 +191,12 @@ class Importer:
         ob.mk8.float_param_2 = effect_area["prm2"]
         ob.mk8.effect_sw = effect_area["EffectSW"]
         # Transform
+        ob.location = Importer.vector_from_dict(effect_area["Translate"], invert_z=True)
+        ob.rotation_mode = "XZY"
+        ob.rotation_euler = Importer.vector_from_dict(effect_area["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(effect_area["Scale"])
-        ob.rotation_euler = Importer.vector_from_dict(effect_area["Rotate"])
-        ob.location = Importer.vector_from_dict(effect_area["Translate"])
         # Group and link.
-        self._add_to_group(ob, "EffectArea")
+        addon.add_object_to_group(ob, "EffectArea")
         bpy.context.scene.objects.link(ob)
         return ob
 
@@ -223,30 +219,28 @@ class Importer:
         def set_optional(name, attribute):
             value = obj.get(name)
             if value is not None:
-                setattr(ob.mk8, "has_" + attribute, True)
-                setattr(ob.mk8, attribute, value)
+                setattr(mk8, "has_" + attribute, True)
+                setattr(mk8, attribute, value)
 
         def set_optional_idx(name, attribute):
             value = obj.get(name)
             if value is not None:
-                setattr(ob.mk8, attribute + "_idx", value)
+                setattr(mk8, attribute + "_idx", value)
 
         addon.log(2, "OBJ " + str(obj["ObjId"]))
-        # Create an object representing the Obj (load the real model later on).
-        ob_name = objflow.get_obj_label(self.context, obj["ObjId"])
-        ob = bpy.data.objects.new(ob_name, None)
-        ob.empty_draw_size = 20
+        # Create an object representing the Obj.
+        ob = bpy.data.objects.new("Obj", None)
+        mk8 = ob.mk8
         # General
-        ob.mk8.object_type = "OBJ"
-        ob.mk8.unit_id_num = obj["UnitIdNum"]
-        ob.mk8.obj_id = obj["ObjId"]
-        ob.mk8.multi_2p = obj["Multi2P"]
-        ob.mk8.multi_4p = obj["Multi4P"]
-        ob.mk8.wifi = obj["WiFi"]
-        ob.mk8.wifi_2p = obj["WiFi2P"]
-        ob.mk8.speed = obj["Speed"]
-        ob.mk8.no_col = obj.get("NoCol", False)
-        ob.mk8.top_view = obj["TopView"]
+        mk8.unit_id_num = obj["UnitIdNum"]
+        mk8.obj_id = obj["ObjId"]
+        mk8.multi_2p = obj["Multi2P"]
+        mk8.multi_4p = obj["Multi4P"]
+        mk8.wifi = obj["WiFi"]
+        mk8.wifi_2p = obj["WiFi2P"]
+        mk8.speed = obj["Speed"]
+        mk8.no_col = obj.get("NoCol", False)
+        mk8.top_view = obj["TopView"]
         # Relations
         set_optional_idx("Obj_Obj", "obj")
         # Paths
@@ -260,16 +254,22 @@ class Importer:
         set_optional("Obj_ItemPath2",  "item_path_2")
         # Parameters
         for i, param in enumerate(obj["Params"]):
-            setattr(ob.mk8, "float_param_" + str(i + 1), param)
+            setattr(mk8, "float_param_" + str(i + 1), param)
         # Transform
+        ob.location = Importer.vector_from_dict(obj["Translate"], invert_z=True)
+        ob.rotation_mode = "XZY"
+        ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(obj["Scale"])
-        ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"])
-        ob.location = Importer.vector_from_dict(obj["Translate"])
-        # Group and link.
-        self._add_to_group(ob, "Obj")
+        # Group, link and update.
+        addon.add_object_to_group(ob, "Obj")
         bpy.context.scene.objects.link(ob)
+        bpy.context.scene.objects.active = ob
+        mk8.object_type = "OBJ"
         return ob
 
     @staticmethod
-    def vector_from_dict(dictionary):
-        return mathutils.Vector((dictionary["X"], -dictionary["Z"], dictionary["Y"]))
+    def vector_from_dict(dictionary, invert_z=False):
+        if invert_z:
+            return dictionary["X"], -dictionary["Z"], dictionary["Y"]
+        else:
+            return dictionary["X"], dictionary["Z"], dictionary["Y"]

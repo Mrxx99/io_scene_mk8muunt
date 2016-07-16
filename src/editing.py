@@ -1,9 +1,33 @@
 import bpy
-from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, IntProperty
+from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, IntProperty, StringProperty
 from . import idproperty
 from .idproperty import ObjectIDProperty
 from . import addon
 from . import objflow
+
+# ==== General =========================================================================================================
+
+def menu_func_add_object(self, context):
+    self.layout.operator_menu_enum("scene.mk8_add_object", property="value", text="Mario Kart 8", icon="OBJECT_DATA")
+
+class MK8OpAddObject(bpy.types.Operator):
+    bl_idname = "scene.mk8_add_object"
+    bl_label = "Mario Kart 8 :: add object"
+
+    name  = StringProperty()
+    value = EnumProperty(name="values", default="OBJ", attr="values", items=[
+        ("OBJ", "Obj", "Construct an object appearing on the track")])
+
+    def execute(self, context):
+        if self.value == "OBJ":
+            ob = bpy.data.objects.new("Obj", None)
+            ob.location = bpy.data.scenes[0].cursor_location
+            ob.mk8.object_type = "OBJ"
+            addon.add_object_to_group(ob, "Obj")
+            bpy.context.scene.objects.link(ob)
+            bpy.context.scene.objects.active = ob
+            ob.select = True
+        return {'FINISHED'}
 
 # ==== Scene ===========================================================================================================
 
@@ -83,7 +107,6 @@ class MK8PanelScene(bpy.types.Panel):
             row.prop(mk8, "obj_prm_7")
             row.prop(mk8, "obj_prm_8")
 
-
 # ==== Object ==========================================================================================================
 
 class MK8PropsObjectAreaCameraArea(bpy.types.PropertyGroup):
@@ -91,23 +114,22 @@ class MK8PropsObjectAreaCameraArea(bpy.types.PropertyGroup):
 
 class MK8PropsObject(bpy.types.PropertyGroup):
     def update(self, context):
-        ob = context.object
-        if ob and ob.type == "MESH":
-            if   self.object_type == "NONE":       ob.data = None # Does not seem to have an effect.
-            elif self.object_type == "AREA":       self.update_area(context, ob)
-            elif self.object_type == "CLIPAREA":   self.update_clip_area(context, ob)
-            elif self.object_type == "EFFECTAREA": self.update_effect_area(context, ob)
-            elif self.object_type == "OBJ":        self.update_obj(context, ob)
+        if   self.object_type == "NONE":       return
+        elif self.object_type == "AREA":       self.update_area(context)
+        elif self.object_type == "CLIPAREA":   self.update_clip_area(context)
+        elif self.object_type == "EFFECTAREA": self.update_effect_area(context)
+        elif self.object_type == "OBJ":        self.update_obj(context)
 
     # ---- Generic ----
 
-    object_type   = EnumProperty(name="Object Type", description="Specifies what kind of course content this object represents.", update=update, items=(
+    unit_id_num   = IntProperty (description="Seems to have been an internal editor ID, but no longer has an effect.", min=0)
+    object_type   = EnumProperty(description="Specifies what kind of course content this object represents.", update=update, items=(
         ("NONE",       "None",        "Do not handle this object as course content."),
         ("AREA",       "Area",        "Handle this object as an area."),
         ("CLIPAREA",   "Clip Area",   "Handle this object as a clip area"),
         ("EFFECTAREA", "Effect Area", "Handle this object as an effect area"),
-        ("OBJ",        "Obj",         "Handle this object as a course object.")))
-    unit_id_num   = IntProperty  (name="Unit ID", description="Seems to have been an internal editor ID, but no longer has an effect.", min=0)
+        ("OBJ",        "Obj",         "Handle this object as a course object."),
+        ("OBJ_MODEL",  "",            ""))) # Used internally to recognize Obj mesh objects.
     float_param_1 = FloatProperty(name="Param 1")
     float_param_2 = FloatProperty(name="Param 2")
     float_param_3 = FloatProperty(name="Param 3")
@@ -119,7 +141,8 @@ class MK8PropsObject(bpy.types.PropertyGroup):
 
     # ---- Area ----
 
-    def update_area(self, context, ob):
+    def update_area(self, context):
+        ob = context.object
         ob.data = addon.get_default_mesh(ob.mk8.area_shape)
         ob.draw_type = "WIRE"
 
@@ -140,7 +163,8 @@ class MK8PropsObject(bpy.types.PropertyGroup):
 
     # ---- Clip Area ----
 
-    def update_clip_area(self, context, ob):
+    def update_clip_area(self, context):
+        ob = context.object
         ob.data = addon.get_default_mesh(self.area_shape)
         ob.draw_type = "WIRE"
 
@@ -151,7 +175,8 @@ class MK8PropsObject(bpy.types.PropertyGroup):
 
     # ---- Effect Area ----
 
-    def update_effect_area(self, context, ob):
+    def update_effect_area(self, context):
+        ob = context.object
         ob.data = addon.get_default_mesh("AREACUBE")
         ob.draw_type = "WIRE"
 
@@ -159,16 +184,24 @@ class MK8PropsObject(bpy.types.PropertyGroup):
 
     # ---- Obj ----
 
-    def update_obj(self, context, ob):
-        ob.data = None
-        ob.empty_draw_type = "PLAIN_AXES"
+    def update_obj(self, context):
+        ob = context.object
+        # Set up the main object which is just a big set of axes.
+        ob.empty_draw_type = "ARROWS"
         ob.empty_draw_size = 20
+        # Update the children to represent the in-game model.
+        for ob_child in ob.children:
+            bpy.context.scene.objects.unlink(ob_child)
+            bpy.data.objects.remove(ob_child)
+        ob_name = objflow.get_obj_label(context, ob.mk8.obj_id)
+        ob.name = ob_name if ob_name else "UnknownObj"
+        objflow.create_obj_models(context, ob)
 
     def obj_id_enum_items(self, context):
-        return objflow.get_id_label_items()
+        return objflow.get_obj_id_label_items()
 
     # General
-    obj_id   = IntProperty  (name="Obj ID",          description="The ID determining the type of this object (as defined in objflow.byaml).", min=1000, max=9999, update=update)
+    obj_id   = IntProperty  (name="Obj ID",          description="The ID determining the type of this object (as defined in objflow.byaml).", default=1013, min=1000, max=9999, update=update)
     multi_2p = BoolProperty (name="Exclude 2P",      description="Removes this obj in 2 player offline games.")
     multi_4p = BoolProperty (name="Exclude 4P",      description="Removes this obj in 4 player offline games.")
     wifi     = BoolProperty (name="Exclude WiFi",    description="Removes this obj in online games.")
@@ -205,6 +238,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
 # ---- Operators ----
 
 class MK8OperatorObjectObjIDSearch(bpy.types.Operator):
+    '''Search for an ObjID by name'''
     bl_idname   = "object.mk8muunt_obj_id_search"
     bl_label    = "Obj ID Search"
     bl_property = "obj_ids"
@@ -213,11 +247,11 @@ class MK8OperatorObjectObjIDSearch(bpy.types.Operator):
 
     def execute(self, context):
         context.object.mk8.obj_id = int(self.obj_ids)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
     def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 # ---- UI ----
 
@@ -229,20 +263,25 @@ class MK8PanelObject(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(context.object)
+        # The panel is displayed if this is a valid MK8 object or a visualizer.
+        return context.object.mk8.object_type != "NONE"\
+               or (context.object.parent and context.object.parent.mk8.object_type != "NONE")
 
     def draw(self, context):
         mk8 = context.object.mk8
-        self.layout.prop(mk8, "object_type")
+        # If this is a visualizer, tell the user to select the parent for transforming it.
+        if mk8.object_type == "NONE" and context.object.parent.mk8.object_type != "NONE":
+            self.layout.label("Visualizer: Select parent with Shift+G to edit.")
+            return
         # Generic properties.
-        if mk8.object_type != "NONE":
-            self.layout.prop(mk8, "unit_id_num")
-            # Type specific properties.
-            self.layout.separator()
-            if   mk8.object_type == "AREA":       self.draw_area(context, mk8)
-            elif mk8.object_type == "CLIPAREA":   self.draw_clip_area(context, mk8)
-            elif mk8.object_type == "EFFECTAREA": self.draw_effect_area(context, mk8)
-            elif mk8.object_type == "OBJ":        self.draw_obj(context, mk8)
+        row = self.layout.row()
+        row.label("Type: " + mk8.object_type)
+        row.label("ID: " + str(mk8.unit_id_num))
+        # Type specific properties.
+        if   mk8.object_type == "AREA":       self.draw_area(context, mk8)
+        elif mk8.object_type == "CLIPAREA":   self.draw_clip_area(context, mk8)
+        elif mk8.object_type == "EFFECTAREA": self.draw_effect_area(context, mk8)
+        elif mk8.object_type == "OBJ":        self.draw_obj(context, mk8)
 
     def draw_area(self, context, mk8):
         row = self.layout.row(align=True)

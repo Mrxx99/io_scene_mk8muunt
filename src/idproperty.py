@@ -40,7 +40,7 @@ import json
 #property to another object, even if that object changes its name.",
 #    "category": "Object",
 #    "author": "Andrew Moffat",
-#    "version": (1, 2),
+#    "version": (1, 2, 1),
 #    "blender": (2, 7, 6)
 #}
 
@@ -87,6 +87,7 @@ class IDPropertyOpMixin(object):
 
 
 class SelectedToIdProperty(IDPropertyOpMixin, bpy.types.Operator):
+    '''Set from the selected object.'''
     bl_idname = "idproperty.get_selected"
 
     def execute(self, ctx):
@@ -100,6 +101,7 @@ class SelectedToIdProperty(IDPropertyOpMixin, bpy.types.Operator):
 
 
 class FindSelected(IDPropertyOpMixin, bpy.types.Operator):
+    '''Focus the selected object.'''
     bl_idname = "idproperty.find_selected"
 
     def execute(self, ctx):
@@ -232,7 +234,7 @@ def create_getter(data_field, value_key):
 
         ob_hash = id_to_hash.get(ob_id, None)
         ob_name = hash_to_name.get(ob_hash, None)
-        exists = ob_name is not None and ob_name in data 
+        exists = ob_name is not None and ob_name in data
 
         if not exists:
             for name, ob in data.items():
@@ -308,7 +310,7 @@ for col_name, type_name in SUPPORTED_COLLECTIONS:
 
 
 @handlers.persistent
-def load_file(_=None, ignore_new=False):
+def load_file(_=None):
     for col_name, _ in SUPPORTED_COLLECTIONS:
         id_to_hash = {}
         hash_to_name = {}
@@ -316,19 +318,23 @@ def load_file(_=None, ignore_new=False):
         ID_TO_HASH[col_name] = id_to_hash
         HASH_TO_NAME[col_name] = hash_to_name
 
-        # This bugs out at load time, bpy.data is _RestrictData and does not provide the supported collections.
-        if not ignore_new:
-            col = getattr(bpy.data, col_name)
-            all_obs = sorted(list(col), key=lambda ob: ob.name, reverse=True)
+        col = getattr(bpy.data, col_name)
+        all_obs = sorted(list(col), key=lambda ob: ob.name, reverse=True)
 
-            for ob in all_obs:
-                # on load, if we encounter an object with a dup id.  unset it and let it
-                # regenerate as a unique id
-                if ob.id in id_to_hash:
-                    ob["id"] = 0
+        for ob in all_obs:
+            # on load, if we encounter an object with a dup id.  unset it and let it
+            # regenerate as a unique id
+            if ob.id in id_to_hash:
+                ob["id"] = 0
 
-                id_to_hash[ob.id] = hash(ob)
-                hash_to_name[hash(ob)] = ob.name
+            id_to_hash[ob.id] = hash(ob)
+            hash_to_name[hash(ob)] = ob.name
+
+def load_file_shim(_=None):
+    """ an ugly shim for calling load_file() "immiediately", which accesses
+    bpy.data (typically not allowed in an addon's register()) """
+    handlers.scene_update_pre.remove(load_file_shim)
+    load_file()
 
 
 def register():
@@ -343,9 +349,8 @@ def register():
         setattr(bpy.types.Scene, counter_name,
             p.IntProperty(name="unique id counter", default=1))
 
-
     handlers.load_post.append(load_file)
-    load_file(None, True)
+    handlers.scene_update_pre.append(load_file_shim)
 
 
 def unregister():
@@ -361,8 +366,9 @@ def unregister():
     handlers.load_post.remove(load_file)
 
 
-#try:
-#    unregister()
-#except:
-#    pass
-#register()
+#if __name__ == "__main__":
+#    try:
+#        unregister()
+#    except:
+#        pass
+#    register()

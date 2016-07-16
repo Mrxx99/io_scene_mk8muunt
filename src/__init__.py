@@ -1,11 +1,11 @@
 bl_info = {
     "name": "Mario Kart 8 Course Info format",
     "description": "Import-Export Mario Kart 8 Course info",
-    "author": "Syroot, IDProperty 1.2 by Andrew Moffat",
-    "version": (0, 2, 5),
-    "blender": (2, 75, 0),
+    "author": "Syroot, IDProperty 1.2.1 by Andrew Moffat",
+    "version": (0, 3, 0),
+    "blender": (2, 77, 0),
     "location": "File > Import-Export",
-    "warning": "This add-on is under development.",
+    "warning": "This add-on is under development. io_scene_bfres is required for it to work.",
     "wiki_url": "https://github.com/Syroot/io_scene_mk8muunt/wiki",
     "tracker_url": "https://github.com/Syroot/io_scene_mk8muunt/issues",
     "support": "COMMUNITY",
@@ -38,10 +38,12 @@ def register():
     idproperty.register()
     # Addon
     bpy.types.UILayout.mk8_colbox = addon.mk8_colbox
+    bpy.app.handlers.scene_update_post.append(addon.scene_update_post)
     # Importing
     bpy.types.INFO_MT_file_import.append(importing.ImportOperator.menu_func)
     # Editing
-    bpy.types.Scene.mk8  = bpy.props.PointerProperty(type=editing.MK8PropsScene)
+    bpy.types.INFO_MT_add.append(editing.menu_func_add_object)
+    bpy.types.Scene.mk8 = bpy.props.PointerProperty(type=editing.MK8PropsScene)
     bpy.types.Object.mk8 = bpy.props.PointerProperty(type=editing.MK8PropsObject)
     # Exporting
     bpy.types.INFO_MT_file_export.append(exporting.ExportOperator.menu_func)
@@ -51,9 +53,11 @@ def unregister():
     idproperty.unregister()
     # Addon
     del bpy.types.UILayout.mk8_colbox
+    bpy.app.handlers.scene_update_post.remove(addon.scene_update_post)
     # Importing
     bpy.types.INFO_MT_file_import.remove(importing.ImportOperator.menu_func)
     # Editing
+    bpy.types.INFO_MT_add.remove(editing.menu_func_add_object)
     del bpy.types.Scene.mk8
     del bpy.types.Object.mk8
     # Exporting

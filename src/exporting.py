@@ -12,7 +12,7 @@ class ExportOperator(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
 
     filename_ext = ".byaml"
     filter_glob = bpy.props.StringProperty(
-        default = "*_muunt*.byaml",
+        default = "*.byaml",
         options = {"HIDDEN"}
     )
     filepath = bpy.props.StringProperty(
@@ -30,7 +30,7 @@ class ExportOperator(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     )
     @staticmethod
     def menu_func(self, context):
-        self.layout.operator(ExportOperator.bl_idname, text ="MK8 Course Info (muunt.byaml)")
+        self.layout.operator(ExportOperator.bl_idname, text ="MK8 Course Info (.byaml)")
 
     def execute(self, context):
         exporter = Exporter(self, context, self.properties.filepath)
@@ -110,11 +110,14 @@ class Exporter:
         obj["WiFi"]    = mk8.wifi
         obj["WiFi2P"]  = mk8.wifi_2p
         # Transform
-        obj["Translate"] = Exporter.dict_from_vector(ob.location)
-        obj["Rotate"] = Exporter.dict_from_vector(ob.rotation_euler)
         obj["Scale"] = Exporter.dict_from_vector(ob.scale)
+        obj["Rotate"] = Exporter.dict_from_vector(ob.rotation_euler, invert_z=True)
+        obj["Translate"] = Exporter.dict_from_vector(ob.location, invert_z=True)
         return obj
 
     @staticmethod
-    def dict_from_vector(vector):
-        return { "X": vector.x, "Z": -vector.y, "Y": vector.z }
+    def dict_from_vector(vector, invert_z=False):
+        if invert_z:
+            return { "X": vector.x, "Z": -vector.y, "Y": vector.z }
+        else:
+            return { "X": vector.x, "Z": vector.y, "Y": vector.z }
