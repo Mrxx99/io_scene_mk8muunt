@@ -7,26 +7,6 @@ from bpy.props import BoolProperty, StringProperty
 
 loaded_byaml = None # The currently loaded BYAML file to reuse when exporting non-visualized objects.
 
-# ---- Obj Parameters ------- ------------------------------------------------------------------------------------------
-
-_param_names = { # Tuples must have a length of 8: Either document an object fully or let it.
-    # ID   1                2                3              4     5     6     7     8
-    1014: ("Initial Delay", "Slam Delay",    "?"          , None, None, None, None, None         ),
-    1119: ("Road Index",    "Initial Delay", "Slam Delay" , None, None, None, None, None         ),
-    4052: ("?",             "?",             "?"          , None, None, None, None, "Model Index")
-}
-
-def get_obj_param_name(context, obj_id, index):
-    names = _param_names.get(obj_id)
-    if names:
-        param_name = names[index - 1]
-        # Return "Unused X" when such parameters should be shown.
-        if not param_name and context.user_preferences.addons[__package__].preferences.show_unused_obj_params:
-            param_name = "Unused " + str(index)
-    else:
-        param_name = "Unknown " + str(index)
-    return param_name
-
 # ---- Add-on Preferences ----------------------------------------------------------------------------------------------
 
 class MK8MuuntAddonPreferences(bpy.types.AddonPreferences):
@@ -72,7 +52,7 @@ def scene_update_post(scene):
             ob.parent.select = True
             ob.select = False
 
-# ---- Model Manager ---------------------------------------------------------------------------------------------------
+# ---- Default Models --------------------------------------------------------------------------------------------------
 
 def create_default_area_cube():
     # Create a 100x100x100 cube, offset to sit on the XY axis.
@@ -118,6 +98,26 @@ def get_default_mesh(mesh_name):
         mesh = default_mesh_creators[mesh_name]()
         mesh.use_fake_user = True
     return mesh
+
+# ---- Obj Parameters --------------------------------------------------------------------------------------------------
+
+_param_names = { # Tuples must have a length of 8: Either document an object fully or let it.
+    # ID   1                2                3              4     5     6     7     8
+    1014: ("Initial Delay", "Slam Delay",    "?"          , None, None, None, None, None         ),
+    1119: ("Road Index",    "Initial Delay", "Slam Delay" , None, None, None, None, None         ),
+    4052: ("?",             "?",             "?"          , None, None, None, None, "Model Index")
+}
+
+def get_obj_param_name(context, obj_id, index):
+    names = _param_names.get(obj_id)
+    if names:
+        param_name = names[index - 1]
+        # Return "Unused X" when such parameters should be shown.
+        if not param_name and context.user_preferences.addons[__package__].preferences.show_unused_obj_params:
+            param_name = "Unused " + str(index)
+    else:
+        param_name = "Unknown " + str(index)
+    return param_name
 
 # ---- Methods & Mixins ------------------------------------------------------------------------------------------------
 

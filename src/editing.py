@@ -22,11 +22,14 @@ class MK8OpAddObject(bpy.types.Operator):
         if self.value == "OBJ":
             ob = bpy.data.objects.new("Obj", None)
             ob.location = bpy.data.scenes[0].cursor_location
+            ob.rotation_mode = "XZY"
             ob.mk8.object_type = "OBJ"
             addon.add_object_to_group(ob, "Obj")
             bpy.context.scene.objects.link(ob)
+            bpy.ops.object.select_all(action="DESELECT")
             bpy.context.scene.objects.active = ob
             ob.select = True
+            ob.mk8.obj_id = 1013
         return {'FINISHED'}
 
 # ==== Scene ===========================================================================================================
@@ -201,7 +204,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         return objflow.get_obj_id_label_items()
 
     # General
-    obj_id   = IntProperty  (name="Obj ID",          description="The ID determining the type of this object (as defined in objflow.byaml).", default=1013, min=1000, max=9999, update=update)
+    obj_id   = IntProperty  (name="Obj ID",          description="The ID determining the type of this object (as defined in objflow.byaml).", min=1000, max=9999, update=update)
     no_col   = BoolProperty (name="No Collisions",   description="Removes collision detection with this object when set.")
     top_view = BoolProperty (name="Top View",        description="Unknown setting, never used in the original courses.")
     # Relations
