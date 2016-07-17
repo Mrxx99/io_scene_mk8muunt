@@ -341,22 +341,16 @@ class MK8PanelObject(bpy.types.Panel):
         row.prop(mk8, "no_col")
         row.prop(mk8, "top_view")
         # Params
-        box = self.layout.mk8_colbox(mk8, "params_expanded")
+        box, header = self.layout.mk8_colbox(mk8, "params_expanded")
+        header.prop(context.user_preferences.addons[__package__].preferences, "show_unused_obj_params", text="Show Unused")
         if mk8.params_expanded:
-            row = box.row()
-            row.prop(mk8, "float_param_1")
-            row.prop(mk8, "float_param_2")
-            row = box.row()
-            row.prop(mk8, "float_param_3")
-            row.prop(mk8, "float_param_4")
-            row = box.row()
-            row.prop(mk8, "float_param_5")
-            row.prop(mk8, "float_param_6")
-            row = box.row()
-            row.prop(mk8, "float_param_7")
-            row.prop(mk8, "float_param_8")
+            col = box.column(align=True)
+            for i in range(1, 9):
+                name = addon.get_obj_param_name(context, mk8.obj_id, i)
+                if name:
+                    col.prop(mk8, "float_param_" + str(i), text=name)
         # Paths
-        box = self.layout.mk8_colbox(mk8, "paths_expanded")
+        box, header = self.layout.mk8_colbox(mk8, "paths_expanded")
         if mk8.paths_expanded:
             row = box.row()
             row.prop(mk8, "speed")
@@ -376,12 +370,12 @@ class MK8PanelObject(bpy.types.Panel):
             optional_prop(row, "item_path_1")
             optional_prop(row, "item_path_2")
         # Relations
-        box = self.layout.mk8_colbox(mk8, "relations_expanded")
+        box, header = self.layout.mk8_colbox(mk8, "relations_expanded")
         if mk8.relations_expanded:
             idproperty.layout_id_prop(box.row(), mk8, "obj")
             optional_prop(box.row(), "area_obj")
         # Exclusions
-        box = self.layout.mk8_colbox(mk8, "exclusions_expanded")
+        box, header = self.layout.mk8_colbox(mk8, "exclusions_expanded")
         if mk8.exclusions_expanded:
             row = box.row(align=True)
             row.prop(mk8, "single")

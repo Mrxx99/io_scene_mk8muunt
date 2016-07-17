@@ -74,11 +74,11 @@ class Exporter:
         root["Obj"] = objs
         # Add Objs referenced indirectly through others. Unclear how the original editor knew about these references.
         if "N64RTrain" in map_res_names:
-            map_ids.append(1044)
+            map_ids.append(1044) # CmnToad
             map_res_names.append("CmnToad")
         # Create the distinct MapObjIdList and MapObjResList contents.
         root["MapObjIdList"] = list(set(map_ids))
-        root["MapObjIdList"].sort(reverse=True)
+        root["MapObjIdList"].sort(reverse=True) # Probably unrequired, but nice.
         root["MapObjResList"] = list(set(map_res_names))
 
     def _get_obj_node(self, obs, ob):

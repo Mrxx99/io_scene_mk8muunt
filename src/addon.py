@@ -1,25 +1,46 @@
 import bmesh
 import bpy
 import mathutils
+from bpy.props import BoolProperty, StringProperty
 
 # ---- Globals ---------------------------------------------------------------------------------------------------------
 
 loaded_byaml = None # The currently loaded BYAML file to reuse when exporting non-visualized objects.
+
+# ---- Obj Parameters ------- ------------------------------------------------------------------------------------------
+
+_param_names = { # Tuples must have a length of 8: Either document an object fully or let it.
+    # ID   1                2                3              4     5     6     7     8
+    1014: ("Initial Delay", "Slam Delay",    "?"          , None, None, None, None, None         ),
+    1119: ("Road Index",    "Initial Delay", "Slam Delay" , None, None, None, None, None         ),
+    4052: ("?",             "?",             "?"          , None, None, None, None, "Model Index")
+}
+
+def get_obj_param_name(context, obj_id, index):
+    names = _param_names.get(obj_id)
+    if names:
+        param_name = names[index - 1]
+        # Return "Unused X" when such parameters should be shown.
+        if not param_name and context.user_preferences.addons[__package__].preferences.show_unused_obj_params:
+            param_name = "Unused " + str(index)
+    else:
+        param_name = "Unknown " + str(index)
+    return param_name
 
 # ---- Add-on Preferences ----------------------------------------------------------------------------------------------
 
 class MK8MuuntAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    game_path = bpy.props.StringProperty(
+    game_path = StringProperty(
         name="Mario Kart 8 Vol Directory Path",
         description="Path to the folder holding game content. 'content' and the DLC directory are children of this.",
         subtype="FILE_PATH"
     )
-    library_path = bpy.props.StringProperty(
-        name="Obj Model Library File Path",
-        description="Path to the *.blend file caching Obj models.",
-        subtype="FILE_PATH"
+    show_unused_obj_params = BoolProperty(
+        name="Show unused Obj parameters",
+        description="When checked, all Obj parameters will be displayed, even known unused ones.",
+        default=True
     )
 
     def draw(self, context):
@@ -114,12 +135,12 @@ def add_object_to_group(ob, group_name):
 def mk8_colbox(self, data, expand_property):
     # Creates an expandable and collapsible box for the UILayout.
     box = self.box()
-    row = box.row()
+    row = box.row(align=True)
     row.prop(data, expand_property,
         icon="TRIA_DOWN" if getattr(data, expand_property) else "TRIA_RIGHT",
         icon_only=True,
         emboss=False
     )
     row.label(getattr(data.rna_type, expand_property)[1]["name"])
-    return box
+    return box, row
 
