@@ -3,6 +3,7 @@ import io
 import mathutils
 from . import binary_io
 
+
 class File:
     def __init__(self):
         self._name_array = None
@@ -83,23 +84,34 @@ class File:
             else:
                 reader.seek(-1, io.SEEK_CUR)
             length = reader.read_uint32() & 0x00FFFFFF
-            if   node_type == NodeType.Array:       value = self._read_array(reader, length)
-            elif node_type == NodeType.Dictionary:  value = self._read_dictionary(reader, length)
-            elif node_type == NodeType.StringArray: value = self._read_string_array(reader, length)
-            elif node_type == NodeType.PathArray:   value = self._read_path_array(reader, length)
-            else: raise AssertionError("Unknown node type " + str(node_type) + ".")
+            if node_type == NodeType.Array:
+                value = self._read_array(reader, length)
+            elif node_type == NodeType.Dictionary:
+                value = self._read_dictionary(reader, length)
+            elif node_type == NodeType.StringArray:
+                value = self._read_string_array(reader, length)
+            elif node_type == NodeType.PathArray:
+                value = self._read_path_array(reader, length)
+            else:
+                raise AssertionError("Unknown node type " + str(node_type) + ".")
             # Seek back to the previous position if this was a value positioned at an offset.
             if old_pos:
                 reader.seek(old_pos)
             return value
         else:
             # Read the following uint32 representing the value directly.
-            if   node_type == NodeType.StringIndex: return self._read_string_index(reader)
-            elif node_type == NodeType.PathIndex:   return self._read_path_index(reader)
-            elif node_type == NodeType.Boolean:     return self._read_boolean(reader)
-            elif node_type == NodeType.Integer:     return self._read_integer(reader)
-            elif node_type == NodeType.Float:       return self._read_float(reader)
-            else: raise AssertionError("Unknown node type " + str(node_type) + ".")
+            if node_type == NodeType.StringIndex:
+                return self._read_string_index(reader)
+            elif node_type == NodeType.PathIndex:
+                return self._read_path_index(reader)
+            elif node_type == NodeType.Boolean:
+                return self._read_boolean(reader)
+            elif node_type == NodeType.Integer:
+                return self._read_integer(reader)
+            elif node_type == NodeType.Float:
+                return self._read_float(reader)
+            else:
+                raise AssertionError("Unknown node type " + str(node_type) + ".")
 
     def _read_string_index(self, reader):
         return self._string_array[reader.read_uint32()]
@@ -143,7 +155,7 @@ class File:
 
     def _read_path_array(self, reader, length):
         value = PathArray()
-        node_offset = reader.tell() - 4 # Path offsets are relative to the start of this node.
+        node_offset = reader.tell() - 4  # Path offsets are relative to the start of this node.
         # Read the element offsets.
         offsets = reader.read_uint32s(length + 1)
         # Read the paths by seeking to their element offset and then back.
@@ -188,33 +200,48 @@ class File:
             for val in value:
                 self._prepare_export(val, names, strings, paths)
         elif isinstance(value, dict):
-            for key, val in sorted(value.items()): # Dictionaries need to be sorted.
+            for key, val in sorted(value.items()):  # Dictionaries need to be sorted.
                 names.append(key)
                 self._prepare_export(val, names, strings, paths)
 
     def _write_value(self, writer, value):
         # Only reserve and return an offset for the complex value contents, write simple or main values directly.
-        if   isinstance(value, str):         self._write_string_index(writer, value)
-        elif isinstance(value, Path):        self._write_path_index(writer, value)
-        elif isinstance(value, list):        return writer.reserve_offset()
-        elif isinstance(value, dict):        return writer.reserve_offset()
-        elif isinstance(value, StringArray): self._write_string_array(writer, value)
-        elif isinstance(value, PathArray):   self._write_path_array(writer, value)
-        elif isinstance(value, bool):        self._write_boolean(writer, value)
-        elif isinstance(value, int):         self._write_integer(writer, value)
-        elif isinstance(value, float):       self._write_float(writer, value)
-        else: raise TypeError("Expected BYAML compatible value type, not " + type(value).__name__)
+        if isinstance(value, str):
+            self._write_string_index(writer, value)
+        elif isinstance(value, Path):
+            self._write_path_index(writer, value)
+        elif isinstance(value, list):
+            return writer.reserve_offset()
+        elif isinstance(value, dict):
+            return writer.reserve_offset()
+        elif isinstance(value, StringArray):
+            self._write_string_array(writer, value)
+        elif isinstance(value, PathArray):
+            self._write_path_array(writer, value)
+        elif isinstance(value, bool):
+            self._write_boolean(writer, value)
+        elif isinstance(value, int):
+            self._write_integer(writer, value)
+        elif isinstance(value, float):
+            self._write_float(writer, value)
+        else:
+            raise TypeError("Expected BYAML compatible value type, not " + type(value).__name__)
 
     def _write_value_contents(self, writer, offset, value):
         # Satisfy the offset to the complex value which must be 4-byte aligned.
         writer.align(4)
         writer.satisfy_offset(offset)
         # Write the value contents.
-        if   isinstance(value, list):        self._write_array(writer, value)
-        elif isinstance(value, dict):        self._write_dictionary(writer, value)
-        elif isinstance(value, StringArray): self._write_string_array(writer, value)
-        elif isinstance(value, PathArray):   self._write_path_array(writer, value)
-        else: raise TypeError("Expected complex value type, not " + type(value).__name__)
+        if isinstance(value, list):
+            self._write_array(writer, value)
+        elif isinstance(value, dict):
+            self._write_dictionary(writer, value)
+        elif isinstance(value, StringArray):
+            self._write_string_array(writer, value)
+        elif isinstance(value, PathArray):
+            self._write_path_array(writer, value)
+        else:
+            raise TypeError("Expected complex value type, not " + type(value).__name__)
 
     def _write_type_and_length(self, writer, node_type, length):
         value = node_type << 24
@@ -246,7 +273,7 @@ class File:
         self._write_type_and_length(writer, NodeType.Dictionary, len(value))
         # Write the key-value pairs.
         offsets = []
-        for key, val in sorted(value.items()): # Dictionaries need to be sorted.
+        for key, val in sorted(value.items()):  # Dictionaries need to be sorted.
             # Get the index of the key string in the file's name array and the type of the value.
             key_index = self._name_array.index(key)
             val_type = NodeType.get_type(val)
@@ -254,15 +281,15 @@ class File:
             # Write the elements.
             offsets.append(self._write_value(writer, val))
         # Write the value contents.
-        for offset, val in zip(offsets, sorted(value.items())): # Dictionaries need to be sorted.
+        for offset, val in zip(offsets, sorted(value.items())):  # Dictionaries need to be sorted.
             if offset:
-                self._write_value_contents(writer, offset, val[1]) # Stupid solution to access value of now-tuples.
+                self._write_value_contents(writer, offset, val[1])  # Stupid solution to access value of now-tuples.
 
     def _write_string_array(self, writer, value):
         writer.align(4)
         self._write_type_and_length(writer, NodeType.StringArray, len(value))
         # Write the offsets to the strings, where the last one points to the end of the last string.
-        offset = 4 + 4 * (len(value) + 1) # Relative to node start + all uint32 offsets.
+        offset = 4 + 4 * (len(value) + 1)  # Relative to node start + all uint32 offsets.
         for string in value:
             writer.write_uint32(offset)
             offset += len(string) + 1
@@ -278,7 +305,7 @@ class File:
         offset = 4 + 4 * (len(value) + 1)  # Relative to node start + all uint32 offsets.
         for path in value:
             writer.write_uint32(offset)
-            offset += len(path) * 28 # 28 bytes are required for a single point.
+            offset += len(path) * 28  # 28 bytes are required for a single point.
         writer.write_uint32(offset)
         # Write the paths.
         for path in value:
@@ -302,6 +329,7 @@ class File:
     def _write_float(self, writer, value):
         writer.write_single(value)
 
+
 class Header:
     def __init__(self):
         self.name_array_offset = None
@@ -322,29 +350,41 @@ class Header:
         self.root_offset = reader.read_uint32()
         return self
 
+
 class NodeType(enum.IntEnum):
-    StringIndex = 0xA0, # 160, mapped to str
-    PathIndex   = 0xA1, # 161, mapped to Path
-    Array       = 0xC0, # 192, mapped to []
-    Dictionary  = 0xC1, # 193, mapped to {}
-    StringArray = 0xC2, # 194, mapped to StringArray
-    PathArray   = 0xC3, # 195, mapped to PathArray
-    Boolean     = 0xD0, # 208, mapped to bool
-    Integer     = 0xD1, # 209, mapped to int
-    Float       = 0xD2  # 210, mapped to float
+    StringIndex = 0xA0,  # 160, mapped to str
+    PathIndex = 0xA1,  # 161, mapped to Path
+    Array = 0xC0,  # 192, mapped to []
+    Dictionary = 0xC1,  # 193, mapped to {}
+    StringArray = 0xC2,  # 194, mapped to StringArray
+    PathArray = 0xC3,  # 195, mapped to PathArray
+    Boolean = 0xD0,  # 208, mapped to bool
+    Integer = 0xD1,  # 209, mapped to int
+    Float = 0xD2  # 210, mapped to float
 
     @staticmethod
     def get_type(node):
-        if   isinstance(node, str):         return NodeType.StringIndex
-        elif isinstance(node, Path):        return NodeType.PathIndex
-        elif isinstance(node, list):        return NodeType.Array
-        elif isinstance(node, dict):        return NodeType.Dictionary
-        elif isinstance(node, StringArray): return NodeType.StringArray
-        elif isinstance(node, PathArray):   return NodeType.PathArray
-        elif isinstance(node, bool):        return NodeType.Boolean
-        elif isinstance(node, int):         return NodeType.Integer
-        elif isinstance(node, float):       return NodeType.Float
-        else: raise TypeError("Expected BYAML compatible node type, not " + type(node).__name__)
+        if isinstance(node, str):
+            return NodeType.StringIndex
+        elif isinstance(node, Path):
+            return NodeType.PathIndex
+        elif isinstance(node, list):
+            return NodeType.Array
+        elif isinstance(node, dict):
+            return NodeType.Dictionary
+        elif isinstance(node, StringArray):
+            return NodeType.StringArray
+        elif isinstance(node, PathArray):
+            return NodeType.PathArray
+        elif isinstance(node, bool):
+            return NodeType.Boolean
+        elif isinstance(node, int):
+            return NodeType.Integer
+        elif isinstance(node, float):
+            return NodeType.Float
+        else:
+            raise TypeError("Expected BYAML compatible node type, not " + type(node).__name__)
+
 
 class Array:
     def __delitem__(self, key):
@@ -390,25 +430,29 @@ class Array:
 
     def _check_type(self, x):
         if not isinstance(x, self._element_type):
-            raise TypeError("Expected "+ self._element_type.__name__ + ", not " + type(x).__name__)
+            raise TypeError("Expected " + self._element_type.__name__ + ", not " + type(x).__name__)
+
 
 class StringArray(Array):
     def __init__(self, elements=None):
         super().__init__(str, elements)
 
+
 class PathArray(Array):
     def __init__(self, elements=None):
         super().__init__(Path, elements)
+
 
 class Path(Array):
     def __init__(self):
         super().__init__(PathPoint)
 
+
 class PathPoint:
     def __eq__(self, other):
-        return isinstance(other, self.__class__)\
-            and self.position == other.position\
-            and self.normal == other.normal\
+        return isinstance(other, self.__class__) \
+            and self.position == other.position \
+            and self.normal == other.normal \
             and self.unknown == other.unknown
 
     def __init__(self):

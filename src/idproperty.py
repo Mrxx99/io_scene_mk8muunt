@@ -25,25 +25,21 @@ enforcing their uniqueness even in the case of duplication/linking, and
 introducing a fast lookup from id -> object.
 """
 
-
 import bpy
 from bpy.app import handlers
-from bpy.utils import register_module, unregister_module
 from bpy import props as p
 from contextlib import contextmanager
 import json
 
-
-#bl_info = {
+# bl_info = {
 #    "name": "IDProperty",
 #    "description": "Provides a new property type that allows you to point a \
-#property to another object, even if that object changes its name.",
+# property to another object, even if that object changes its name.",
 #    "category": "Object",
 #    "author": "Andrew Moffat",
 #    "version": (1, 2, 1),
 #    "blender": (2, 7, 6)
-#}
-
+# }
 
 
 # some arbitrarily large number representing the range of a set of ids within a
@@ -68,7 +64,6 @@ class IDPropertyOpMixin(object):
     to_populate_data = p.StringProperty()
     to_populate_field = p.StringProperty()
 
-
     @property
     def ob(self):
         data = eval(self.to_populate_data)
@@ -82,12 +77,12 @@ class IDPropertyOpMixin(object):
         setattr(data, self.to_populate_field, ob_name)
 
     @classmethod
-    def poll(self, ctx):
+    def poll(cls, ctx):
         return has_active_3d_view()
 
 
 class SelectedToIdProperty(IDPropertyOpMixin, bpy.types.Operator):
-    '''Set from the selected object.'''
+    """Set from the selected object."""
     bl_idname = "idproperty.get_selected"
 
     def execute(self, ctx):
@@ -101,7 +96,7 @@ class SelectedToIdProperty(IDPropertyOpMixin, bpy.types.Operator):
 
 
 class FindSelected(IDPropertyOpMixin, bpy.types.Operator):
-    '''Focus the selected object.'''
+    """Focus the selected object."""
     bl_idname = "idproperty.find_selected"
 
     def execute(self, ctx):
@@ -121,6 +116,7 @@ class FindSelected(IDPropertyOpMixin, bpy.types.Operator):
 def has_active_3d_view():
     return len(list(all_3d_views())) > 0
 
+
 def all_3d_views():
     for area in bpy.context.screen.areas:
         if area.type == "VIEW_3D":
@@ -139,7 +135,6 @@ def in_3dview(ctx):
     override = ctx.copy()
     override.update({"area": area, "region": region})
     yield override
-
 
 
 def layout_id_prop(layout, data, prop):
@@ -172,6 +167,7 @@ def _get_global_id(field):
     max_id = getattr(scenes[0], field)
     return max_id
 
+
 def _inc_global_id(field, old_max_id):
     """ internal helper for incrementing the unique object counter id by making
     sure that all scenes have the same value """
@@ -180,7 +176,6 @@ def _inc_global_id(field, old_max_id):
     for scene in bpy.data.scenes:
         setattr(scene, field, new_id)
     return new_id
-
 
 
 def get_by_id(data_field, id):
@@ -199,7 +194,6 @@ def get_by_id(data_field, id):
     return ob
 
 
-
 def _create_id_getter(field):
     def fn(self):
         id = self.get("id", 0)
@@ -212,9 +206,10 @@ def _create_id_getter(field):
         # file, we're going to offset all of its ids by some amount
         lib_offset = 0
         if self.library:
-            lib_offset = (self.library.id+1) * LIB_ID_SPACE
+            lib_offset = (self.library.id + 1) * LIB_ID_SPACE
 
         return id + lib_offset
+
     return fn
 
 
@@ -223,7 +218,6 @@ def _create_value_key(name):
 
 
 def create_getter(data_field, value_key):
-
     def fn(self):
         data = getattr(bpy.data, data_field)
 
@@ -246,12 +240,11 @@ def create_getter(data_field, value_key):
         if ob_name is None:
             ob_name = ""
         return ob_name
+
     return fn
 
 
-
 def create_setter(data_field, value_key, validator=None):
-
     def fn(self, value):
         data = getattr(bpy.data, data_field)
 
@@ -308,7 +301,6 @@ for col_name, type_name in SUPPORTED_COLLECTIONS:
     globals()[prop_name] = _create_id_property(col_name)
 
 
-
 @handlers.persistent
 def load_file(_=None):
     for col_name, _ in SUPPORTED_COLLECTIONS:
@@ -330,6 +322,7 @@ def load_file(_=None):
             id_to_hash[ob.id] = hash(ob)
             hash_to_name[hash(ob)] = ob.name
 
+
 def load_file_shim(_=None):
     """ an ugly shim for calling load_file() "immiediately", which accesses
     bpy.data (typically not allowed in an addon's register()) """
@@ -338,25 +331,19 @@ def load_file_shim(_=None):
 
 
 def register():
-    #bpy.utils.register_class(SelectedToIdProperty)
-    #bpy.utils.register_class(FindSelected)
-
     for col_name, type_name in SUPPORTED_COLLECTIONS:
         type = getattr(bpy.types, type_name)
         type.id = p.IntProperty(name="unique id", get=_create_id_getter(col_name))
 
         counter_name = col_name + "_id_counter"
         setattr(bpy.types.Scene, counter_name,
-            p.IntProperty(name="unique id counter", default=1))
+                p.IntProperty(name="unique id counter", default=1))
 
     handlers.load_post.append(load_file)
     handlers.scene_update_pre.append(load_file_shim)
 
 
 def unregister():
-    #bpy.utils.unregister_class(SelectedToIdProperty)
-    #bpy.utils.unregister_class(FindSelected)
-
     for col_name, type_name in SUPPORTED_COLLECTIONS:
         type = getattr(bpy.types, type_name)
         del type.id
@@ -364,11 +351,3 @@ def unregister():
         delattr(bpy.types.Scene, counter_name)
 
     handlers.load_post.remove(load_file)
-
-
-#if __name__ == "__main__":
-#    try:
-#        unregister()
-#    except:
-#        pass
-#    register()

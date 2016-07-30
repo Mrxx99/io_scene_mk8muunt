@@ -1,10 +1,11 @@
 import io
 import struct
 
+
 class BinaryReader:
     def __init__(self, raw):
         self.raw = raw
-        self.endianness = "<" # Little-endian
+        self.endianness = "<"  # Little-endian
 
     def __enter__(self):
         self.reader = io.BufferedReader(self.raw)
@@ -73,7 +74,7 @@ class BinaryReader:
 class BinaryWriter:
     def __init__(self, raw):
         self.raw = raw
-        self.endianness = "<" # Little-endian
+        self.endianness = "<"  # Little-endian
 
     def __enter__(self):
         self.writer = io.BufferedWriter(self.raw)
