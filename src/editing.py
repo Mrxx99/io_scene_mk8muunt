@@ -26,7 +26,7 @@ class MK8PropsScene(bpy.types.PropertyGroup):
     is_jugem_above = bpy.props.BoolProperty(name="Lakitu Above")
     jugem_above = bpy.props.IntProperty(name="Lakitu Above")
     lap_jugem_pos = bpy.props.IntProperty(name="Lap Lakitu Pos.")
-    lap_number = bpy.props.IntProperty(name="Lap Number", description="The amount of total laps which have to be driven to finish this track.", min=0, max=7, default=3)
+    lap_number = bpy.props.IntProperty(name="Lap Count", description="The amount of total laps which have to be driven to finish this track.", min=0, max=7, default=3)
     pattern_num = bpy.props.IntProperty(name="Pattern Count", description="The amount of random object sets of which one is picked at the race start.", min=0)
     obj_prm_1 = bpy.props.IntProperty(name="Param 1")
     obj_prm_2 = bpy.props.IntProperty(name="Param 2")
@@ -197,16 +197,15 @@ class MK8PanelScene(bpy.types.Panel):
 
     def draw_scene(self, context, mk8):
         self.layout.prop(mk8, "lap_number")
+        self.layout.prop(mk8, "effect_sw")
         self.layout.prop(mk8, "head_light")
+        self.layout.prop(mk8, "pattern_num")
         row = self.layout.row()
         row.prop(mk8, "is_jugem_above")
         row.prop(mk8, "jugem_above")
         row = self.layout.row()
         row.prop(mk8, "is_first_left")
         row.prop(mk8, "lap_jugem_pos")
-        row = self.layout.row()
-        row.prop(mk8, "effect_sw")
-        row.prop(mk8, "pattern_num")
         # Obj Parameters
         box, header = self.layout.mk8_colbox(mk8, "obj_prms_expanded")
         if mk8.obj_prms_expanded:
@@ -343,12 +342,14 @@ class MK8ListObjectAreaCameraArea(bpy.types.UIList):
 # ---- Operators ----
 
 class MK8OpAddObject(bpy.types.Operator):
-    """Add a Mario Kart 8 object appearing on the track"""
+    """Add a Mario Kart 8 object to the course"""
     bl_idname = "object.mk8_add"
     bl_label = "Add MK8 Obj"
 
     name = bpy.props.StringProperty()
     type = bpy.props.EnumProperty(name="types", items=[
+        ("AREA", "Area", "Section to control objects"),
+        ("EFFECTAREA", "Effect Area", "Section with visual effects"),
         ("OBJ", "Obj", "Dynamic, interactive and / or collidable object")])
 
     @staticmethod
@@ -361,9 +362,45 @@ class MK8OpAddObject(bpy.types.Operator):
         return bpy.context.mode == 'OBJECT'
 
     def execute(self, context):
-        if self.type == "OBJ":
+        if self.type == "AREA":
+            self._execute_area(context)
+        elif self.type == "EFFECTAREA":
+            self._execute_effect_area(context)
+        elif self.type == "OBJ":
             self._execute_obj(context)
         return {'FINISHED'}
+
+    def _execute_area(self, context):
+        # Create a new object.
+        ob = bpy.data.objects.new("Area", addon.get_default_mesh("AREACUBE"))
+        ob.location = context.scene.cursor_location
+        ob.rotation_mode = 'XZY'
+        # Add to the scene.
+        addon.add_object_to_group(ob, "Area")
+        context.scene.objects.link(ob)
+        # Select only the new object.
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.scene.objects.active = ob
+        ob.select = True
+        # Set up the MK8 specific properties.
+        ob.mk8.object_type = "AREA"
+        ob.draw_type = 'WIRE'
+
+    def _execute_effect_area(self, context):
+        # Create a new object.
+        ob = bpy.data.objects.new("Area", addon.get_default_mesh("AREACUBE"))
+        ob.location = context.scene.cursor_location
+        ob.rotation_mode = 'XZY'
+        # Add to the scene.
+        addon.add_object_to_group(ob, "EffectArea")
+        context.scene.objects.link(ob)
+        # Select only the new object.
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.scene.objects.active = ob
+        ob.select = True
+        # Set up the MK8 specific properties.
+        ob.mk8.object_type = "EFFECTAREA"
+        ob.draw_type = 'WIRE'
 
     def _execute_obj(self, context):
         # Create a new object.
@@ -379,7 +416,7 @@ class MK8OpAddObject(bpy.types.Operator):
         ob.select = True
         # Set up the MK8 specific properties.
         ob.mk8.object_type = "OBJ"
-        ob.mk8.obj_id = 1013
+        ob.mk8.obj_id = 1013  # ItemBox
         ob.mk8.inclusions = {"Single", "Multi2P", "Multi4P", "WiFi", "WiFi2P"}
         addon.set_models(ob, ob.mk8.obj_id)
 
@@ -394,6 +431,7 @@ class MK8OperatorObjectObjIDSearch(bpy.types.Operator):
 
     def execute(self, context):
         context.object.mk8.obj_id = int(self.obj_id_enum)
+        addon.force_update = True
         return {'FINISHED'}
 
     def invoke(self, context, event):

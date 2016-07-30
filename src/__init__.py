@@ -2,7 +2,7 @@ bl_info = {
     "name": "Mario Kart 8 Course Info format",
     "description": "Import-Export Mario Kart 8 Course info",
     "author": "Syroot, IDProperty 1.2.1 by Andrew Moffat",
-    "version": (0, 4, 0),
+    "version": (0, 4, 1),
     "blender": (2, 77, 0),
     "location": "File > Import-Export",
     "warning": "This add-on is under development. io_scene_bfres is required for it to work.",
