@@ -18,6 +18,7 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     show_areas = bpy.props.BoolProperty(name="Show Areas", description="Makes Areas visible after loading.")
     show_clip_areas = bpy.props.BoolProperty(name="Show Clip Areas", description="Makes Clip Areas visible after loading.")
     show_effect_areas = bpy.props.BoolProperty(name="Show Effect Areas", description="Makes Effect Areas visible after loading.")
+    show_sound_objs = bpy.props.BoolProperty(name="Show Sound Objs", description="Makes Sound Objs visible after loading.")
 
     @staticmethod
     def menu_func(self, context):
@@ -52,6 +53,7 @@ class Importer:
         clip_areas = self._convert_clip_areas(root)
         effect_areas = self._convert_effect_areas(root)
         objs = self._convert_objs(root, areas)
+        sound_objs = self._convert_sound_objs(root)
 
     # ---- Info ----
 
@@ -173,11 +175,12 @@ class Importer:
         self.context.scene.objects.link(ob)
         self.context.scene.objects.active = ob
         # General
-        ob.mk8.object_type = "EFFECTAREA"
-        ob.mk8.unit_id_num = effect_area["UnitIdNum"]
-        ob.mk8.float_param_1 = effect_area["prm1"]
-        ob.mk8.float_param_2 = effect_area["prm2"]
-        ob.mk8.effect_sw = effect_area["EffectSW"]
+        mk8 = ob.mk8
+        mk8.object_type = "EFFECTAREA"
+        mk8.unit_id_num = effect_area["UnitIdNum"]
+        mk8.float_param_1 = effect_area["prm1"]
+        mk8.float_param_2 = effect_area["prm2"]
+        mk8.effect_sw = effect_area["EffectSW"]
         # Transform
         ob.location = Importer.vector_from_dict(effect_area["Translate"], invert_z=True)
         ob.rotation_mode = 'XZY'
@@ -243,6 +246,50 @@ class Importer:
         ob.rotation_mode = "XZY"
         ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(obj["Scale"])
+        return ob
+
+    # ---- Sound Obj ----
+
+    def _convert_sound_objs(self, root):
+        obs = []
+        sound_objs = root.get("SoundObj")
+        if sound_objs:
+            addon.log(1, "SOUNDOBJ[{}]".format(len(sound_objs)))
+            # Import instances.
+            for sound_obj in sound_objs:
+                ob = self._convert_sound_obj(sound_obj)
+                ob.hide = not self.operator.show_sound_objs
+                obs.append(ob)
+        return obs
+
+    def _convert_sound_obj(self, sound_obj):
+        # Create an empty object representing the Sound Obj.
+        addon.log(2, "SOUNDOBJ")
+        ob = bpy.data.objects.new("SoundObj", None)
+        ob.empty_draw_type = 'SPHERE'
+        ob.empty_draw_size = 1000
+        addon.add_object_to_group(ob, "SoundObj")
+        self.context.scene.objects.link(ob)
+        self.context.scene.objects.active = ob
+        # General
+        mk8 = ob.mk8
+        mk8.object_type = "SOUNDOBJ"
+        mk8.unit_id_num = sound_obj["UnitIdNum"]
+        mk8.sound_index = sound_obj["prm1"]
+        mk8.int_param_2 = sound_obj["prm2"]
+        mk8.top_view = sound_obj["TopView"] == "True"
+        # Inclusions
+        single = sound_obj.get("Single")
+        if not single or single == "False":
+            mk8.inclusions |= {"Single"}
+        for i in ("Multi2P", "Multi4P", "WiFi", "WiFi2P"):
+            if not sound_obj.get(i, False):
+                mk8.inclusions |= {i}
+        # Transform
+        ob.location = Importer.vector_from_dict(sound_obj["Translate"], invert_z=True)
+        ob.rotation_mode = 'XZY'
+        ob.rotation_euler = Importer.vector_from_dict(sound_obj["Rotate"], invert_z=True)
+        ob.scale = Importer.vector_from_dict(sound_obj["Scale"])
         return ob
 
     # ---- General ----

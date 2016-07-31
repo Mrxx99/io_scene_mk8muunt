@@ -45,14 +45,24 @@ class MK8PropsObjectAreaCameraArea(bpy.types.PropertyGroup):
 
 
 class MK8PropsObject(bpy.types.PropertyGroup):
+    # ---- General ----
+
     object_type = bpy.props.EnumProperty(items=(  # Used internally by the addon.
         ("NONE", "", ""),
         ("AREA", "", "."),
         ("CLIPAREA", "", ""),
         ("EFFECTAREA", "", ""),
-        ("OBJ", "Obj", ""),
+        ("OBJ", "", ""),
+        ("SOUNDOBJ", "", ""),
         ("ADDON_VISUALIZER", "", "")))
     unit_id_num = bpy.props.IntProperty(name="Unit ID", description="Number identifying this object, can be non-unique 0 without issues.", min=0)
+    top_view = bpy.props.BoolProperty(name="Top View", description="Unknown setting, never used in the original courses.")
+    inclusions = bpy.props.EnumProperty(name="Inclusions", options={'ENUM_FLAG'}, items=(
+        ("Single", "1P", "Include this object in 1 player offline games."),
+        ("Multi2P", "2P", "Include this object in 2 player offline games."),
+        ("Multi4P", "3/4P", "Include this object in 3 or 4 player offline games."),
+        ("WiFi", "WiFi 1P", "Include this object in 1 player online games."),
+        ("WiFi2P", "WiFi 2P", "Include this object in 2 player online games.")))
     float_param_1 = bpy.props.FloatProperty(name="Param 1")
     float_param_2 = bpy.props.FloatProperty(name="Param 2")
     float_param_3 = bpy.props.FloatProperty(name="Param 3")
@@ -133,17 +143,9 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     def _validator_obj(ob):
         return ob.mk8.object_type == "OBJ"
 
-    # General
     obj_id = bpy.props.IntProperty(name="Obj ID", description="The ID determining the type of this object (as defined in objflow.byaml).", min=1000, max=9999, update=_update_obj_id)
     obj_id_name = bpy.props.StringProperty(name="Type", description="The name of the Obj determining its type.", get=_get_obj_id_name, set=_set_obj_id_name)
     no_col = bpy.props.BoolProperty(name="No Collisions", description="Removes collision detection with this Obj when set.")
-    top_view = bpy.props.BoolProperty(name="Top View", description="Unknown setting, never used in the original courses.")
-    inclusions = bpy.props.EnumProperty(name="Inclusions", options={'ENUM_FLAG'}, items=(
-        ("Single", "1P", "Include this Obj in 1 player offline games."),
-        ("Multi2P", "2P", "Include this Obj in 2 player offline games."),
-        ("Multi4P", "3/4P", "Include this Obj in 3 or 4 player offline games."),
-        ("WiFi", "WiFi 1P", "Include this Obj in 1 player online games."),
-        ("WiFi2P", "WiFi 2P", "Include this Obj in 2 player online games.")))
     # Paths
     speed = bpy.props.FloatProperty(name="Speed", description="The speed in which the Obj follows its path.")
     has_path = bpy.props.BoolProperty(name="Has Path", description="Determines whether a Path will be used.")
@@ -175,6 +177,11 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     params_expanded = bpy.props.BoolProperty(name="Params", description="Expand the Params section or collapse it.", default=True)
     paths_expanded = bpy.props.BoolProperty(name="Paths", description="Expand the Paths section or collapse it.", default=True)
     relations_expanded = bpy.props.BoolProperty(name="Relations", description="Expand the Relations section or collapse it.", default=True)
+
+    # ---- Sound Obj ----
+
+    sound_index = bpy.props.IntProperty(name="Sound Index", description="The index of the sound to be played.", min=0)
+    int_param_2 = bpy.props.IntProperty(name="Param 2", description="Unknown meaning, always -1 in the original courses.", default=-1)
 
 
 # ---- UI ----
@@ -240,6 +247,8 @@ class MK8PanelObject(bpy.types.Panel):
             self._draw_effect_area(context, mk8)
         elif mk8.object_type == "OBJ":
             self._draw_obj(context, mk8)
+        elif mk8.object_type == "SOUNDOBJ":
+            self._draw_sound_obj(context, mk8)
 
     def _draw_area(self, context, mk8):
         self.bl_label += " Area"
@@ -320,6 +329,12 @@ class MK8PanelObject(bpy.types.Panel):
             idproperty.layout_id_prop(box.row(), mk8, "area")
             idproperty.layout_id_prop(box.row(), mk8, "obj")
 
+    def _draw_sound_obj(self, context, mk8):
+        self.bl_label += " Sound Obj"
+        self.layout.prop(mk8, "sound_index")
+        self.layout.prop(mk8, "int_param_2")
+        self.layout.prop(mk8, "inclusions")
+
     def _optional_prop(self, mk8, layout, path):
         # Checkbox
         row = layout.row(align=True)
@@ -350,7 +365,8 @@ class MK8OpAddObject(bpy.types.Operator):
     type = bpy.props.EnumProperty(name="types", items=[
         ("AREA", "Area", "Section to control objects"),
         ("EFFECTAREA", "Effect Area", "Section with visual effects"),
-        ("OBJ", "Obj", "Dynamic, interactive and / or collidable object")])
+        ("OBJ", "Obj", "Dynamic, interactive and / or collidable object"),
+        ("SOUNDOBJ", "Sound Obj", "Region in which a sound is emitted.")])
 
     @staticmethod
     def menu_func(self, context):
@@ -368,6 +384,8 @@ class MK8OpAddObject(bpy.types.Operator):
             self._execute_effect_area(context)
         elif self.type == "OBJ":
             self._execute_obj(context)
+        elif self.type == "SOUNDOBJ":
+            self._execute_sound_obj(context)
         return {'FINISHED'}
 
     def _execute_area(self, context):
@@ -419,6 +437,24 @@ class MK8OpAddObject(bpy.types.Operator):
         ob.mk8.obj_id = 1013  # ItemBox
         ob.mk8.inclusions = {"Single", "Multi2P", "Multi4P", "WiFi", "WiFi2P"}
         addon.set_models(ob, ob.mk8.obj_id)
+
+    def _execute_sound_obj(self, context):
+        # Create a new object.
+        ob = bpy.data.objects.new("SoundObj", None)
+        ob.location = context.scene.cursor_location
+        ob.rotation_mode = 'XZY'
+        # Add to the scene.
+        addon.add_object_to_group(ob, "SoundObj")
+        context.scene.objects.link(ob)
+        # Select only the new object.
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.scene.objects.active = ob
+        ob.select = True
+        # Set up the MK8 specific properties.
+        ob.mk8.object_type = "SOUNDOBJ"
+        ob.mk8.inclusions = {"Single", "Multi2P", "Multi4P", "WiFi", "WiFi2P"}
+        ob.empty_draw_type = 'SPHERE'
+        ob.empty_draw_size = 1000
 
 
 class MK8OperatorObjectObjIDSearch(bpy.types.Operator):

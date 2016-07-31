@@ -84,13 +84,13 @@ _last_scene_ob_count = -1
 @bpy.app.handlers.persistent
 def scene_update_post(scene):
     # Prevent to get into endless loops when causing scene updates inside of the handler.
-    global force_update, _disable_handlers
+    global _disable_handlers
     if _disable_handlers:
         return
     _disable_handlers = True
     if scene.mk8.scene_type == "COURSE":
         # Ensure correct state when objects get added or deleted.
-        global _last_scene_ob_count
+        global _last_scene_ob_count, force_update
         scene_ob_count = len(scene.objects)
         if force_update or len(scene.objects) != _last_scene_ob_count:
             force_update = False

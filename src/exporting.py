@@ -35,12 +35,12 @@ class Exporter:
         # Create a copy of the loaded BYAML and replace only parts set to be replaced.
         file = byaml.File()
         file.root = copy.deepcopy(addon.loaded_byaml.root)  # TODO: addon.loaded_byaml is None when addon is reloaded.
-        # TODO: Get the objects by type rather than group.
         self._replace_info(file.root)
         areas = self._replace_areas(file.root)
         # TODO: Requires rewrite of the Clip node: clip_areas = self._replace_clip_areas(file.root)
         effect_areas = self._replace_effect_areas(file.root)
         objs = self._replace_objs(file.root, areas)
+        sound_objs = self._replace_sound_objs(file.root)
         # Save course info data to a file.
         file.save_raw(open(self.filepath, "wb"))
         return {'FINISHED'}
@@ -60,20 +60,16 @@ class Exporter:
             root["OBJPrm{}".format(i)] = getattr(mk8, "obj_prm_{}".format(i))
         root["PatternNum"] = mk8.pattern_num
 
-    # ---- Areas ----
+    # ---- Area ----
 
     def _replace_areas(self, root):
-        # Get the Area objects in Blender.
-        group = bpy.data.groups.get("Area", None)
-        if not group:
-            return
-        obs = group.objects.values()
-        # Add the Area instances to the Area array.
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "AREA"]
         areas = []
         for ob in obs:
             mk8 = ob.mk8
             areas.append(self._get_area_node(ob))
-        root["Area"] = areas
+        if areas:
+            root["Area"] = areas
         return obs
 
     def _get_area_node(self, ob):
@@ -98,20 +94,16 @@ class Exporter:
         area["Translate"] = Exporter._dict_from_vector(ob.location, invert_z=True)
         return area
 
-    # ---- Clip Areas ----
+    # ---- Clip Area ----
 
     def _replace_clip_areas(self, root):
-        # Get the Clip Area objects in Blender.
-        group = bpy.data.groups.get("ClipArea", None)
-        if not group:
-            return
-        obs = group.objects.values()
-        # Add the Clip Area instances to the Clip Area array.
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "CLIPAREA"]
         clip_areas = []
         for ob in obs:
             mk8 = ob.mk8
             clip_areas.append(self._get_clip_area_node(ob))
-        root["ClipArea"] = clip_areas
+        if clip_areas:
+            root["ClipArea"] = clip_areas
         return obs
 
     def _get_clip_area_node(self, ob):
@@ -129,20 +121,16 @@ class Exporter:
         clip_area["Translate"] = Exporter._dict_from_vector(ob.location, invert_z=True)
         return clip_area
 
-    # ---- Effect Areas ----
+    # ---- Effect Area ----
 
     def _replace_effect_areas(self, root):
-        # Get the Effect Area objects in Blender.
-        group = bpy.data.groups.get("EffectArea", None)
-        if not group:
-            return
-        obs = group.objects.values()
-        # Add the Effect Area instances to the Effect Area array.
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "EFFECTAREA"]
         effect_areas = []
         for ob in obs:
             mk8 = ob.mk8
             effect_areas.append(self._get_effect_area_node(ob))
-        root["EffectArea"] = effect_areas
+        if effect_areas:
+            root["EffectArea"] = effect_areas
         return obs
 
     def _get_effect_area_node(self, ob):
@@ -159,13 +147,10 @@ class Exporter:
         effect_area["Translate"] = Exporter._dict_from_vector(ob.location, invert_z=True)
         return effect_area
 
-    # ---- Objs ----
+    # ---- Obj ----
 
     def _replace_objs(self, root, areas):
-        # Get the Obj objects in Blender.
-        group = bpy.data.groups.get("Obj", None)
-        obs = group.objects.values()
-        # Add the Obj instances to the Obj array and remember ID and ResNames.
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "OBJ"]
         objs = []
         map_ids = []
         map_res_names = []
@@ -173,8 +158,9 @@ class Exporter:
             mk8 = ob.mk8
             map_ids.append(mk8.obj_id)
             map_res_names.extend(objflow.get_res_names_by_id(mk8.obj_id))
-            objs.append(self._get_obj_node(areas, obs, ob))
-        root["Obj"] = objs
+            objs.append(self._get_obj_node(ob, areas, obs))
+        if objs:
+            root["Obj"] = objs
         # Add Objs referenced indirectly through others. Unclear how the original editor knew about these references.
         if "N64RTrain" in map_res_names:
             map_ids.append(1044)  # CmnToad
@@ -184,7 +170,7 @@ class Exporter:
         root["MapObjResList"] = list(set(map_res_names))
         return obs
 
-    def _get_obj_node(self, areas, obs, ob):
+    def _get_obj_node(self, ob, areas, obs):
         mk8 = ob.mk8
         obj = {}
         # General
@@ -237,6 +223,36 @@ class Exporter:
         obj["Rotate"] = Exporter._dict_from_vector(ob.rotation_euler, invert_z=True)
         obj["Translate"] = Exporter._dict_from_vector(ob.location, invert_z=True)
         return obj
+
+    # ---- Sound Obj ----
+
+    def _replace_sound_objs(self, root):
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "SOUNDOBJ"]
+        sound_objs = []
+        for ob in obs:
+            mk8 = ob.mk8
+            sound_objs.append(self._get_sound_obj(ob))
+        if sound_objs:
+            root["SoundObj"] = sound_objs
+        return obs
+
+    def _get_sound_obj(self, ob):
+        mk8 = ob.mk8
+        sound_obj = {}
+        # General
+        sound_obj["UnitIdNum"] = mk8.unit_id_num
+        sound_obj["prm1"] = mk8.sound_index
+        sound_obj["prm2"] = mk8.int_param_2
+        sound_obj["TopView"] = "True" if mk8.top_view else "False"
+        # Inclusions
+        sound_obj["Single"] = "True" if "Single" not in mk8.inclusions else "False"
+        for i in ("Multi2P", "Multi4P", "WiFi", "WiFi2P"):
+            sound_obj[i] = i not in mk8.inclusions
+        # Transform
+        sound_obj["Scale"] = Exporter._dict_from_vector(ob.scale)
+        sound_obj["Rotate"] = Exporter._dict_from_vector(ob.rotation_euler, invert_z=True)
+        sound_obj["Translate"] = Exporter._dict_from_vector(ob.location, invert_z=True)
+        return sound_obj
 
     # ---- General ----
 
