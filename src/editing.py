@@ -290,7 +290,7 @@ class MK8PanelObject(bpy.types.Panel):
             row.prop(mk8, "obj_id_name")
         else:
             row.prop(mk8, "obj_id_name", icon='ERROR')
-        row.operator("object.mk8_obj_id_search", text="", icon='VIEWZOOM')
+        row.operator("object.mk8_obj_type_name_search", text="", icon='VIEWZOOM')
         row = self.layout.row()
         row.prop(mk8, "no_col")
         row.prop(mk8, "top_view")
@@ -457,17 +457,57 @@ class MK8OpAddObject(bpy.types.Operator):
         ob.empty_draw_size = 1000
 
 
-class MK8OperatorObjectObjIDSearch(bpy.types.Operator):
-    """Search for an ObjID by name"""
-    bl_idname = "object.mk8_obj_id_search"
+class MK8OpObjectObjTypeNameSearch(bpy.types.Operator):
+    """Search for an Obj type by name"""
+    bl_idname = "object.mk8_obj_type_name_search"
     bl_label = "Obj ID Search"
-    bl_property = "obj_id_enum"
+    bl_property = "obj_name"
+    bl_options = {'INTERNAL', 'UNDO'}
 
-    obj_id_enum = bpy.props.EnumProperty(items=objflow.get_label_items)
+    obj_name = bpy.props.EnumProperty(items=objflow.get_label_items)
 
     def execute(self, context):
-        context.object.mk8.obj_id = int(self.obj_id_enum)
+        context.object.mk8.obj_id = int(self.obj_name)
         addon.force_update = True
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {'FINISHED'}
+
+
+class MK8OpObjectUnitIdSearch(bpy.types.Operator):
+    """Search for objects by their Unit ID"""
+    bl_idname = "object.mk8_unit_id_search"
+    bl_label = "Search MK8 Objects By Unit ID"
+    bl_property = "unit_id"
+
+    _items = None
+
+    def get_items(self, context):
+        # Get a unique list of current Unit IDs.
+        unit_ids = []
+        for ob in bpy.context.scene.objects:
+            if ob.mk8.object_type not in ("NONE", "ADDON_VISUALIZER") and ob.mk8.unit_id_num not in unit_ids:
+                unit_ids.append(ob.mk8.unit_id_num)
+        unit_ids.sort()
+        # Create the list of items out of it (hold a reference to it as suggested by the Blender documentation).
+        _items = []
+        for unit_id in unit_ids:
+            _items.append((str(unit_id), str(unit_id), ""))
+        return _items
+
+    unit_id = bpy.props.EnumProperty(items=get_items)
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.mode == 'OBJECT'
+
+    def execute(self, context):
+        # Select the corresponding objects.
+        bpy.ops.object.select_all(action='DESELECT')
+        for ob in bpy.context.scene.objects:
+            ob.select = ob.mk8.object_type not in ("NONE", "ADDON_VISUALIZER") and ob.mk8.unit_id_num == int(self.unit_id)
         return {'FINISHED'}
 
     def invoke(self, context, event):

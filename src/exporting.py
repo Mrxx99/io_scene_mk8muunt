@@ -63,7 +63,10 @@ class Exporter:
     # ---- Area ----
 
     def _replace_areas(self, root):
+        # Get the corresponding objects.
         obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "AREA"]
+        obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
+        # Create the nodes out of the objects.
         areas = []
         for ob in obs:
             mk8 = ob.mk8
@@ -97,7 +100,10 @@ class Exporter:
     # ---- Clip Area ----
 
     def _replace_clip_areas(self, root):
+        # Get the corresponding objects.
         obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "CLIPAREA"]
+        obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
+        # Create the nodes out of the objects.
         clip_areas = []
         for ob in obs:
             mk8 = ob.mk8
@@ -124,7 +130,10 @@ class Exporter:
     # ---- Effect Area ----
 
     def _replace_effect_areas(self, root):
+        # Get the corresponding objects.
         obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "EFFECTAREA"]
+        obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
+        # Create the nodes out of the objects.
         effect_areas = []
         for ob in obs:
             mk8 = ob.mk8
@@ -150,7 +159,10 @@ class Exporter:
     # ---- Obj ----
 
     def _replace_objs(self, root, areas):
+        # Get the corresponding objects.
         obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "OBJ"]
+        obs.reverse()  # Optional
+        # Create the nodes out of the objects.
         objs = []
         map_ids = []
         map_res_names = []
@@ -161,13 +173,18 @@ class Exporter:
             objs.append(self._get_obj_node(ob, areas, obs))
         if objs:
             root["Obj"] = objs
+        # Create the distinct MapObjIdList and MapObjResList contents.
+        map_ids = list(set(map_ids))
+        map_res_names = list(set(map_res_names))
         # Add Objs referenced indirectly through others. Unclear how the original editor knew about these references.
+        if "ItemBox" in map_res_names:
+            map_ids.append(9007)  # ItemBoxFont
         if "N64RTrain" in map_res_names:
             map_ids.append(1044)  # CmnToad
             map_res_names.append("CmnToad")
-        # Create the distinct MapObjIdList and MapObjResList contents.
-        root["MapObjIdList"] = list(set(map_ids))
-        root["MapObjResList"] = list(set(map_res_names))
+        map_ids.sort(reverse=True)  # Optional
+        root["MapObjIdList"] = map_ids
+        root["MapObjResList"] = map_res_names
         return obs
 
     def _get_obj_node(self, ob, areas, obs):
@@ -227,7 +244,10 @@ class Exporter:
     # ---- Sound Obj ----
 
     def _replace_sound_objs(self, root):
+        # Get the corresponding objects.
         obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "SOUNDOBJ"]
+        obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
+        # Create the nodes out of the objects.
         sound_objs = []
         for ob in obs:
             mk8 = ob.mk8
