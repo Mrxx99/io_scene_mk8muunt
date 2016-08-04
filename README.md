@@ -18,7 +18,7 @@ It is currently in the alpha stage and supports the following Course BYAML secti
 | JugemPath                      | No     | No     | No     |        |
 | LapPath                        | No     | No     | No     |        |
 | Obj                            | Yes    | Yes    | Yes    |        |
-| Path                           | Partly | Partly | No     | Can be visualized, but it's unclear how to solve custom curve point data. |
+| Path                           | Partly | Partly | No     | Unclear how to solve custom curve point data. |
 | ReplayCamera                   | No     | No     | No     |        |
 | SoundObj                       | Yes    | Yes    | Yes    |        |
 
