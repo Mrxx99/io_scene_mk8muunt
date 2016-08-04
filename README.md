@@ -2,11 +2,27 @@
 
 This is a Blender add-on to import and export Mario Kart 8 Course Info BYAML files (those with "muunt" in their name).
 
-It is currently in the alpha stage and supports the following features:
+It is currently in the alpha stage and supports the following Course BYAML sections:
 
-- Load all Areas, ClipAreas, EffectAreas, Objs and SoundObjs, visualizing them in the 3D view and their parameters in panels.
-- Allow editing of Area, ClipArea, EffectArea, Obj and SoundObj configurations.
-- Export (modified) Areas, EffectAreas, Objs and SoundObjs to a new BYAML file written from scratch.
+| Feature                        | Import | Edit   | Export | Status |
+| ------------------------------ | :----: | :----: | :----: | ------ |
+| Main Information               | Yes    | Yes    | Yes    |        |
+| Area                           | Yes    | Yes    | Yes    |        |
+| Clip / ClipArea / ClipPattern  | Yes    | Yes    | No     | Unclear how to compute the information. |
+| EffectArea                     | Yes    | Yes    | Yes    |        |
+| EnemyPath                      | No     | No     | No     |        |
+| GlidePath                      | No     | No     | No     |        |
+| GravityPath                    | No     | No     | No     |        |
+| IntroCamera                    | No     | No     | No     |        |
+| ItemPath                       | No     | No     | No     |        |
+| JugemPath                      | No     | No     | No     |        |
+| LapPath                        | No     | No     | No     |        |
+| Obj                            | Yes    | Yes    | Yes    |        |
+| Path                           | Partly | Partly | No     | Unclear how to solve custom curve point data. |
+| ReplayCamera                   | No     | No     | No     |        |
+| SoundObj                       | Yes    | Yes    | Yes    |        |
+
+If supported sections reference others not imported yet (like an Obj a Path), they are referenced by index. This is okay, as those sections are not rewritten on export anyway and order is kept. Otherwise, real Blender ID references are used.
 
 ![alt tag](https://raw.githubusercontent.com/Syroot/io_scene_mk8muunt/master/doc/readme/example.png)
 
