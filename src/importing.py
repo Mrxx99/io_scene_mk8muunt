@@ -18,6 +18,7 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     show_areas = bpy.props.BoolProperty(name="Show Areas", description="Makes Areas visible after loading.")
     show_clip_areas = bpy.props.BoolProperty(name="Show Clip Areas", description="Makes Clip Areas visible after loading.")
     show_effect_areas = bpy.props.BoolProperty(name="Show Effect Areas", description="Makes Effect Areas visible after loading.")
+    show_paths = bpy.props.BoolProperty(name="Show Paths", description="Makes Paths visible after loading.")
     show_sound_objs = bpy.props.BoolProperty(name="Show Sound Objs", description="Makes Sound Objs visible after loading.")
 
     @staticmethod
@@ -46,13 +47,14 @@ class Importer:
         return {'FINISHED'}
 
     def _convert(self, root):
-        # TODO: Convert all sub node types.
         addon.log(0, "BYAML {}".format(self.filename))
+        # TODO: Convert all sub node types.
         self._convert_info(root)
         areas = self._convert_areas(root)
         clip_areas = self._convert_clip_areas(root)
         effect_areas = self._convert_effect_areas(root)
         objs = self._convert_objs(root, areas)
+        paths = self._convert_paths(root)
         sound_objs = self._convert_sound_objs(root)
 
     # ---- Info ----
@@ -246,6 +248,52 @@ class Importer:
         ob.rotation_mode = "XZY"
         ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(obj["Scale"])
+        return ob
+
+    # ---- Paths ----
+
+    def _convert_paths(self, root):
+        obs = []
+        paths = root.get("Path")
+        if paths:
+            addon.log(1, "PATH[{}]".format(len(paths)))
+            # Import instances.
+            for path in paths:
+                ob = self._convert_path(path)
+                ob.hide = not self.operator.show_paths
+                obs.append(ob)
+        return obs
+
+    def _convert_path(self, path):
+        # Create a bezier curve object representing the Path (except for vertex rotations / normals and params).
+        addon.log(2, "PATH")
+        cu = bpy.data.curves.new("Path", 'CURVE')
+        cu.dimensions = '3D'
+        cu.fill_mode = 'HALF'
+        ob = bpy.data.objects.new("Path", cu)
+        addon.add_object_to_group(ob, "Path")
+        self.context.scene.objects.link(ob)
+        self.context.scene.objects.active = ob
+        # General
+        mk8 = ob.mk8
+        mk8.object_type = "PATH"
+        mk8.unit_id_num = path["UnitIdNum"]
+        mk8.path_delete = path["Delete"]
+        mk8.path_rail_type = str(path["RailType"])
+        # Add the points to a new spline.
+        sp = cu.splines.new('BEZIER')
+        sp.use_cyclic_u = path["IsClosed"]
+        points = path["PathPt"]
+        sp.bezier_points.add(len(points) - 1)  # There is already one point in new curves, so add one less.
+        for i, point in enumerate(points):
+            pt = sp.bezier_points[i]
+            pt.co = Importer.vector_from_dict(point["Translate"], invert_z=True)
+            pt.handle_left = Importer.vector_from_dict(point["ControlPoints"][0], invert_z=True)
+            pt.handle_right = Importer.vector_from_dict(point["ControlPoints"][1], invert_z=True)
+        # Lock the transform as paths are always in the global coordinate system.
+        ob.lock_location = [True] * 3
+        ob.lock_rotation = [True] * 3
+        ob.lock_scale = [True] * 3
         return ob
 
     # ---- Sound Obj ----

@@ -52,6 +52,7 @@ class Exporter:
         root["EffectSW"] = mk8.effect_sw
         root["HeadLight"] = int(mk8.head_light)
         root["IsFirstLeft"] = mk8.is_first_left
+        root["FirstCurve"] = "left" if mk8.is_first_left else "right"
         root["IsJugemAbove"] = mk8.is_jugem_above
         root["JugemAbove"] = mk8.jugem_above
         root["LapJugemPos"] = mk8.lap_jugem_pos

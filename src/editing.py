@@ -1,8 +1,4 @@
-import addon_utils
 import bpy
-import bmesh
-import mathutils
-import os
 from . import idproperty
 from . import addon
 from . import objflow
@@ -53,6 +49,7 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ("CLIPAREA", "", ""),
         ("EFFECTAREA", "", ""),
         ("OBJ", "", ""),
+        ("PATH", "", ""),
         ("SOUNDOBJ", "", ""),
         ("ADDON_VISUALIZER", "", "")))
     unit_id_num = bpy.props.IntProperty(name="Unit ID", description="Number identifying this object, can be non-unique 0 without issues.", min=0)
@@ -178,6 +175,13 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     paths_expanded = bpy.props.BoolProperty(name="Paths", description="Expand the Paths section or collapse it.", default=True)
     relations_expanded = bpy.props.BoolProperty(name="Relations", description="Expand the Relations section or collapse it.", default=True)
 
+    # ---- Path ----
+
+    path_delete = bpy.props.BoolProperty(name="Delete")
+    path_rail_type = bpy.props.EnumProperty(name="Rail Type", items=(
+        ("0", "Unknown (0)", ""),
+        ("1", "Unknown (1)", "")))
+
     # ---- Sound Obj ----
 
     sound_index = bpy.props.IntProperty(name="Sound Index", description="The index of the sound to be played.", min=0)
@@ -247,6 +251,8 @@ class MK8PanelObject(bpy.types.Panel):
             self._draw_effect_area(context, mk8)
         elif mk8.object_type == "OBJ":
             self._draw_obj(context, mk8)
+        elif mk8.object_type == "PATH":
+            self._draw_path(context, mk8)
         elif mk8.object_type == "SOUNDOBJ":
             self._draw_sound_obj(context, mk8)
 
@@ -328,6 +334,11 @@ class MK8PanelObject(bpy.types.Panel):
         if mk8.relations_expanded:
             idproperty.layout_id_prop(box.row(), mk8, "area")
             idproperty.layout_id_prop(box.row(), mk8, "obj")
+
+    def _draw_path(self, context, mk8):
+        self.bl_label += " Path"
+        self.layout.prop(mk8, "path_delete")
+        self.layout.prop(mk8, "path_rail_type")
 
     def _draw_sound_obj(self, context, mk8):
         self.bl_label += " Sound Obj"
