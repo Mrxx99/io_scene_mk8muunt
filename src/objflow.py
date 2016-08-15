@@ -38,7 +38,8 @@ _param_names = {  # Tuples must have a length of 8: Either document an object fu
     1014: ("Initial Delay", "Slam Delay", "?", None, None, None, None, None),  # Dossun
     1036: ("?", "?", None, None, None, None, None, None),  # PcBalloon
     1119: ("Road Index", "Initial Delay", "Slam Delay", None, None, None, None, None),  # CrWanwanB
-    4052: ("?", "?", "?", None, None, None, None, "Model Index")  # VolcanoPiece
+    4052: ("?", "?", "?", None, None, None, None, "Model Index"),  # VolcanoPiece
+    4042: ("Fall Delay (no battle)", None, None, None, None, None, None, None)  # KaraPillar
 }
 
 

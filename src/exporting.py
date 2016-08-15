@@ -172,17 +172,20 @@ class Exporter:
             map_ids.append(mk8.obj_id)
             map_res_names.extend(objflow.get_res_names_by_id(mk8.obj_id))
             objs.append(self._get_obj_node(ob, areas, obs))
+            # Obj's could be sorted by ObjId here, but this is not required. Thus the order is kept to simplify file comparisons.
         if objs:
             root["Obj"] = objs
-        # Create the distinct MapObjIdList and MapObjResList contents.
-        map_ids = list(set(map_ids))
-        map_res_names = list(set(map_res_names))
         # Add Objs referenced indirectly through others. Unclear how the original editor knew about these references.
         if "ItemBox" in map_res_names:
             map_ids.append(9007)  # ItemBoxFont
+        if "KaraPillar" in map_res_names:
+            map_ids.append(9006)  # KaraPillarBase
         if "N64RTrain" in map_res_names:
             map_ids.append(1044)  # CmnToad
             map_res_names.append("CmnToad")
+        # Create the distinct MapObjIdList and MapObjResList contents.
+        map_ids = list(set(map_ids))
+        map_res_names = list(set(map_res_names))
         map_ids.sort(reverse=True)  # Optional
         root["MapObjIdList"] = map_ids
         root["MapObjResList"] = map_res_names

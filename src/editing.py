@@ -48,6 +48,10 @@ class MK8PropsObject(bpy.types.PropertyGroup):
         ("AREA", "", "."),
         ("CLIPAREA", "", ""),
         ("EFFECTAREA", "", ""),
+        ("GRAVITYPATH", "", ""),
+        ("GRAVITYPATH_PT", "", ""),
+        ("LAPPATH", "", ""),
+        ("LAPPATH_PT", "", ""),
         ("OBJ", "", ""),
         ("PATH", "", ""),
         ("SOUNDOBJ", "", ""),
@@ -108,6 +112,12 @@ class MK8PropsObject(bpy.types.PropertyGroup):
     # ---- Effect Area ----
 
     effect_sw = bpy.props.IntProperty(name="FX", description="Specifies the effect type to be seen inside this area.", min=0)
+
+    # ---- Gravity Path ----
+
+    pt_camera_height = bpy.props.IntProperty(name="Camera Height")
+    pt_glide_only = bpy.props.BoolProperty(name="Glide Only")
+    pt_transform = bpy.props.BoolProperty(name="Transform")
 
     # ---- Obj ----
 

@@ -15,11 +15,13 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filter_glob = bpy.props.StringProperty(default="*.byaml", options={'HIDDEN'})
     filepath = bpy.props.StringProperty(name="File Path", description="Filepath used for importing the course BYAML file.", maxlen=1024, default="")
 
-    show_areas = bpy.props.BoolProperty(name="Show Areas", description="Makes Areas visible after loading.")
+    show_areas = bpy.props.BoolProperty(name="Show Areas", description="Makes Areas visible after loading.", default=True)
     show_clip_areas = bpy.props.BoolProperty(name="Show Clip Areas", description="Makes Clip Areas visible after loading.")
-    show_effect_areas = bpy.props.BoolProperty(name="Show Effect Areas", description="Makes Effect Areas visible after loading.")
+    show_effect_areas = bpy.props.BoolProperty(name="Show Effect Areas", description="Makes Effect Areas visible after loading.", default=True)
+    show_gravity_paths = bpy.props.BoolProperty(name="Show Gravity Paths", description="Makes Gravity Paths visible after loading.")
+    show_lap_paths = bpy.props.BoolProperty(name="Show Lap Paths", description="Makes Lap Paths visible after loading.")
     show_paths = bpy.props.BoolProperty(name="Show Paths", description="Makes Paths visible after loading.")
-    show_sound_objs = bpy.props.BoolProperty(name="Show Sound Objs", description="Makes Sound Objs visible after loading.")
+    show_sound_objs = bpy.props.BoolProperty(name="Show Sound Objs", description="Makes Sound Objs visible after loading.", default=True)
 
     @staticmethod
     def menu_func(self, context):
@@ -42,6 +44,8 @@ class Importer:
         with open(self.filepath, "rb") as raw:
             addon.loaded_byaml = byaml.File()
             addon.loaded_byaml.load_raw(raw)
+        with open("D:\\test_python.byaml", "wb") as raw:
+            addon.loaded_byaml.save_raw(raw)
         # Import the data into Blender objects.
         self._convert(addon.loaded_byaml.root)
         return {'FINISHED'}
@@ -53,6 +57,8 @@ class Importer:
         areas = self._convert_areas(root)
         clip_areas = self._convert_clip_areas(root)
         effect_areas = self._convert_effect_areas(root)
+        gravity_paths = self._convert_gravity_paths(root)
+        lap_paths = self._convert_lap_paths(root)
         objs = self._convert_objs(root, areas)
         paths = self._convert_paths(root)
         sound_objs = self._convert_sound_objs(root)
@@ -190,6 +196,102 @@ class Importer:
         ob.scale = Importer.vector_from_dict(effect_area["Scale"])
         return ob
 
+    # ---- Gravity Path ----
+
+    def _convert_gravity_paths(self, root):
+        obs = []
+        gravity_paths = root.get("GravityPath")
+        if gravity_paths:
+            addon.log(1, "GRAVITYPATH[{}]".format(len(gravity_paths)))
+            # Import instances.
+            for i, gravity_path in enumerate(gravity_paths):
+                ob = self._convert_gravity_path(i, gravity_path)
+                ob.hide = not self.operator.show_gravity_paths
+                for child in ob.children:
+                    child.hide = not self.operator.show_gravity_paths
+                # TODO: Satisfy NextPt / PrevPt instances.
+                obs.append(ob)
+        return obs
+
+    def _convert_gravity_path(self, index, gravity_path):
+        # Create an object representing the Gravity Path.
+        addon.log(2, "GRAVITYPATH {}".format(index))
+        ob = bpy.data.objects.new("GravityPath.{0:03d}".format(index), None)
+        addon.add_object_to_group(ob, "GravityPath")
+        self.context.scene.objects.link(ob)
+        # General
+        mk8 = ob.mk8
+        mk8.object_type = "GRAVITYPATH"
+        mk8.unit_id_num = gravity_path["UnitIdNum"]
+        # PathPts
+        for i, path_pt in enumerate(gravity_path["PathPt"]):
+            # Create an object representing the path point.
+            pt_ob = bpy.data.objects.new("GravityPath.{0:03d}_Pt.{1:03d}".format(index, i), None)
+            pt_ob.empty_draw_size = 0.5
+            pt_ob.empty_draw_type = 'CUBE'
+            self.context.scene.objects.link(pt_ob)
+            # General
+            pt_mk8 = pt_ob.mk8
+            pt_mk8.object_type = "GRAVITYPATH_PT"
+            pt_mk8.pt_camera_height = path_pt["CameraHeight"]
+            pt_mk8.pt_glide_only = path_pt["GlideOnly"]
+            pt_mk8.pt_transform = path_pt["Transform"]
+            # TODO: NextPt / PrevPt
+            # Transform
+            pt_ob.location = Importer.vector_from_dict(path_pt["Translate"], invert_z=True)
+            pt_ob.rotation_mode = 'XZY'
+            pt_ob.rotation_euler = Importer.vector_from_dict(path_pt["Rotate"], invert_z=True)
+            pt_ob.scale = Importer.vector_from_dict(path_pt["Scale"])
+            # Add to parent.
+            pt_ob.parent = ob
+        return ob
+
+    # ---- Lap Path ----
+
+    def _convert_lap_paths(self, root):
+        obs = []
+        lap_paths = root.get("LapPath")
+        if lap_paths:
+            addon.log(1, "LAPPATH[{}]".format(len(lap_paths)))
+            # Import instances.
+            for i, lap_path in enumerate(lap_paths):
+                ob = self._convert_lap_path(i, lap_path)
+                ob.hide = not self.operator.show_lap_paths
+                for child in ob.children:
+                    child.hide = not self.operator.show_lap_paths
+                # TODO: Satisfy NextPt / PrevPt instances.
+                obs.append(ob)
+        return obs
+
+    def _convert_lap_path(self, index, lap_path):
+        # Create an object representing the Lap Path.
+        addon.log(2, "LAPPATH {}".format(index))
+        ob = bpy.data.objects.new("LapPath.{0:03d}".format(index), None)
+        addon.add_object_to_group(ob, "LapPath")
+        self.context.scene.objects.link(ob)
+        # General
+        mk8 = ob.mk8
+        mk8.object_type = "LAPPATH"
+        mk8.unit_id_num = lap_path["UnitIdNum"]
+        # PathPts
+        for i, path_pt in enumerate(lap_path["PathPt"]):
+            # Create an object representing the path point.
+            pt_ob = bpy.data.objects.new("LapPath.{0:03d}_Pt.{1:03d}".format(index, i), None)
+            pt_ob.empty_draw_size = 0.5
+            pt_ob.empty_draw_type = 'CUBE'
+            self.context.scene.objects.link(pt_ob)
+            # TODO: General
+            pt_mk8 = pt_ob.mk8
+            # TODO: NextPt / PrevPt
+            # Transform
+            pt_ob.location = Importer.vector_from_dict(path_pt["Translate"], invert_z=True)
+            pt_ob.rotation_mode = 'XZY'
+            pt_ob.rotation_euler = Importer.vector_from_dict(path_pt["Rotate"], invert_z=True)
+            pt_ob.scale = Importer.vector_from_dict(path_pt["Scale"])
+            # Add to parent.
+            pt_ob.parent = ob
+        return ob
+
     # ---- Obj ----
 
     def _convert_objs(self, root, areas):
@@ -245,7 +347,7 @@ class Importer:
             setattr(mk8, "float_param_{}".format(i + 1), param)
         # Transform
         ob.location = Importer.vector_from_dict(obj["Translate"], invert_z=True)
-        ob.rotation_mode = "XZY"
+        ob.rotation_mode = 'XZY'
         ob.rotation_euler = Importer.vector_from_dict(obj["Rotate"], invert_z=True)
         ob.scale = Importer.vector_from_dict(obj["Scale"])
         return ob

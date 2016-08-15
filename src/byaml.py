@@ -16,7 +16,7 @@ class File:
         with binary_io.BinaryReader(raw) as reader:
             reader.endianness = ">"
             header = Header.load(reader)
-            # Read the name array, holding strings referenced by index for the name of other nodes.
+            # Read the name array, holding strings referenced by index for the names of other nodes.
             reader.seek(header.name_array_offset)
             self._name_array = self._read_node(reader)
             # Read the optional string array, holding strings referenced by index in string nodes.
@@ -205,7 +205,7 @@ class File:
                 self._prepare_export(val, names, strings, paths)
 
     def _write_value(self, writer, value):
-        # Only reserve and return an offset for the complex value contents, write simple or main values directly.
+        # Only reserve and return an offset for the complex value contents, write simple values directly.
         if isinstance(value, str):
             self._write_string_index(writer, value)
         elif isinstance(value, Path):
@@ -214,10 +214,6 @@ class File:
             return writer.reserve_offset()
         elif isinstance(value, dict):
             return writer.reserve_offset()
-        elif isinstance(value, StringArray):
-            self._write_string_array(writer, value)
-        elif isinstance(value, PathArray):
-            self._write_path_array(writer, value)
         elif isinstance(value, bool):
             self._write_boolean(writer, value)
         elif isinstance(value, int):
@@ -264,7 +260,7 @@ class File:
         offsets = []
         for element in value:
             offsets.append(self._write_value(writer, element))
-        # Write the contents of complex nodes, and satisfy the offsets.
+        # Write the contents of complex nodes and satisfy the offsets.
         for offset, element in zip(offsets, value):
             if offset:
                 self._write_value_contents(writer, offset, element)
