@@ -44,8 +44,6 @@ class Importer:
         with open(self.filepath, "rb") as raw:
             addon.loaded_byaml = byaml.File()
             addon.loaded_byaml.load_raw(raw)
-        with open("D:\\test_python.byaml", "wb") as raw:
-            addon.loaded_byaml.save_raw(raw)
         # Import the data into Blender objects.
         self._convert(addon.loaded_byaml.root)
         return {'FINISHED'}
