@@ -26,7 +26,7 @@ If supported sections reference others not imported yet (like an Obj a Path), th
 
 ![alt tag](https://raw.githubusercontent.com/Syroot/io_scene_mk8muunt/master/doc/readme/example.png)
 
-S. the wiki for [help and more information](https://github.com/Syroot/io_scene_mk8muunt).
+S. the wiki for [help and more information](https://github.com/Syroot/io_scene_mk8muunt/wiki).
 
 License
 =======
