@@ -65,7 +65,7 @@ class Exporter:
 
     def _replace_areas(self, root):
         # Get the corresponding objects.
-        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "AREA"]
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == 'AREA']
         obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
         # Create the nodes out of the objects.
         areas = []
@@ -102,7 +102,7 @@ class Exporter:
 
     def _replace_clip_areas(self, root):
         # Get the corresponding objects.
-        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "CLIPAREA"]
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == 'CLIPAREA']
         obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
         # Create the nodes out of the objects.
         clip_areas = []
@@ -132,7 +132,7 @@ class Exporter:
 
     def _replace_effect_areas(self, root):
         # Get the corresponding objects.
-        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "EFFECTAREA"]
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == 'EFFECTAREA']
         obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
         # Create the nodes out of the objects.
         effect_areas = []
@@ -161,7 +161,7 @@ class Exporter:
 
     def _replace_objs(self, root, areas):
         # Get the corresponding objects.
-        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "OBJ"]
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == 'OBJ']
         obs.reverse()  # Optional
         # Create the nodes out of the objects.
         objs = []
@@ -180,7 +180,7 @@ class Exporter:
             map_ids.append(9007)  # ItemBoxFont
         if "KaraPillar" in map_res_names:
             map_ids.append(9006)  # KaraPillarBase
-        if "N64RTrain" in map_res_names:
+        if any(name in map_res_names for name in ("CmnGroupToad", "N64RTrain")):
             map_ids.append(1044)  # CmnToad
             map_res_names.append("CmnToad")
         # Create the distinct MapObjIdList and MapObjResList contents.
@@ -249,7 +249,7 @@ class Exporter:
 
     def _replace_sound_objs(self, root):
         # Get the corresponding objects.
-        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == "SOUNDOBJ"]
+        obs = [ob for ob in self.context.scene.objects if ob.mk8.object_type == 'SOUNDOBJ']
         obs.sort(key=lambda ob: ob.mk8.unit_id_num)  # Optional
         # Create the nodes out of the objects.
         sound_objs = []
