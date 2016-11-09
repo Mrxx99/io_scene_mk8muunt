@@ -15,13 +15,13 @@ class ImportOperator(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filter_glob = bpy.props.StringProperty(default="*.byaml", options={'HIDDEN'})
     filepath = bpy.props.StringProperty(name="File Path", description="Filepath used for importing the course BYAML file.", maxlen=1024, default="")
 
-    show_areas = bpy.props.BoolProperty(name="Show Areas", description="Makes Areas visible after loading.", default=True)
+    show_areas = bpy.props.BoolProperty(name="Show Areas", description="Makes Areas visible after loading.")
     show_clip_areas = bpy.props.BoolProperty(name="Show Clip Areas", description="Makes Clip Areas visible after loading.")
-    show_effect_areas = bpy.props.BoolProperty(name="Show Effect Areas", description="Makes Effect Areas visible after loading.", default=True)
+    show_effect_areas = bpy.props.BoolProperty(name="Show Effect Areas", description="Makes Effect Areas visible after loading.")
     show_gravity_paths = bpy.props.BoolProperty(name="Show Gravity Paths", description="Makes Gravity Paths visible after loading.")
     show_lap_paths = bpy.props.BoolProperty(name="Show Lap Paths", description="Makes Lap Paths visible after loading.")
     show_paths = bpy.props.BoolProperty(name="Show Paths", description="Makes Paths visible after loading.")
-    show_sound_objs = bpy.props.BoolProperty(name="Show Sound Objs", description="Makes Sound Objs visible after loading.", default=True)
+    show_sound_objs = bpy.props.BoolProperty(name="Show Sound Objs", description="Makes Sound Objs visible after loading.")
 
     @staticmethod
     def menu_func(self, context):
