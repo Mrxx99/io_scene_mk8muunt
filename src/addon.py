@@ -39,19 +39,8 @@ def mk8_colbox(self, data, expand_property):
 class MK8MuuntAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    def _get_game_path(self):
-        return self.game_path
-
-    def _set_game_path(self, value):
-        # Check if at least a content folder exists as the child.
-        if os.path.isdir(os.path.join(value, "content")):
-            self.game_path = value
-        else:
-            raise AssertionError("The selected path does not have a 'content' subfolder. Please select the 'vol' directory of your Mario Kart 8 files.")
-
     # General
-    game_path = bpy.props.StringProperty()
-    game_path_ui = bpy.props.StringProperty(name="Mario Kart 8 Vol Directory Path", description="Path to the folder holding game content. 'content' and the DLC directory are children of this.", subtype='FILE_PATH', get=_get_game_path, set=_set_game_path)
+    game_path = bpy.props.StringProperty(name="Vol Directory", description="Path to the folder holding game content.", subtype='DIR_PATH')
     # Visualization
     lod_model_index = bpy.props.IntProperty(name="LoD Model Index", description="The index of the LoD model to use when importing Obj models. Lower means more detail.", min=0, default=1)
     import_all_textures = bpy.props.BoolProperty(name="Import All Textures", description="Additionally imports normal, specular and emissive rather than just diffuse textures.")
@@ -62,7 +51,15 @@ class MK8MuuntAddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         box = self.layout.box()
         box.label("General Options:", icon='FILE_FOLDER')
-        box.prop(self, "game_path_ui")
+        box.prop(self, "game_path")
+        if not self.game_path:
+            box.label("Please set a vol directory path.", icon='ERROR')
+        elif not os.path.isdir(os.path.join(self.game_path, "content")):
+            box.label("Invalid vol directory. It does not have a content subfolder.", icon='ERROR')
+        elif not os.path.isfile(os.path.join(self.game_path, "content", "data", "objflow.byaml")):
+            box.label("Invalid vol directory. It does not have a 'objflow.byaml' file in '/content/data/objflow.byaml'.", icon='ERROR')
+        else:
+            box.label("The vol path is valid!", icon='FILE_TICK')
         box.prop(self, "debug_mode")
         box = self.layout.box()
         box.label("Visualization Options:", icon='RESTRICT_VIEW_OFF')
